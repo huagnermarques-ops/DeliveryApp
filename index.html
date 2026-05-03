@@ -254,9 +254,7 @@
 
     /* ===== PERFIL ===== */
     .perfil-wrap { flex: 1; padding: 20px 16px; overflow-y: auto; }
-    .perfil-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
-    .perfil-user { display: flex; align-items: center; gap: 12px; }
-    .perfil-avatar { width: 52px; height: 52px; border-radius: 50%; background: #fff3e0; display: flex; align-items: center; justify-content: center; font-size: 26px; }
+    .perfil-header { display:  flex; align-items: center; justify-content: center; font-size: 26px; }
     .perfil-name { font-size: 16px; font-weight: 700; color: #111; }
     .perfil-email { font-size: 12px; color: #aaa; }
     .role-badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: #fff3e0; color: #FF6B00; margin-top: 3px; }
@@ -422,6 +420,25 @@
     .sp-typing span:nth-child(2) { animation-delay: 0.2s; }
     .sp-typing span:nth-child(3) { animation-delay: 0.4s; }
     @keyframes sp-bounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-5px)} }
+  
+    /* 🔥 LOADING DAS LOJAS */
+    #lojas-loading {
+   padding: 12px 16px;
+}
+
+  .skeleton {
+  height: 80px;
+  border-radius: 16px;
+  margin-bottom: 10px;
+  background: linear-gradient(90deg, #eee, #ddd, #eee);
+  background-size: 200px 100%;
+  animation: loading 1.2s infinite;
+}
+
+  @keyframes loading {
+  0% { background-position: -200px 0; }
+  100% { background-position: 200px 0; }
+}
   </style>
 </head>
 <body>
@@ -432,7 +449,7 @@
     <div class="splash-circle">
       <div class="splash-moto">🛵</div>
       <div class="splash-dash"></div>
-      <div class="splash-title">LocalFlow</div>
+      <div class="splash-title">DeliveryApp</div>
       <div class="splash-sub">TUDO PERTO DE VOCÊ</div>
     </div>
     <div class="splash-dots">
@@ -500,14 +517,26 @@
           <button class="cat-pill" onclick="selectCat(this,'mercado')">🛒 Mercado</button>
           <button class="cat-pill" onclick="selectCat(this,'farmacia')">💊 Farmácia</button>
           <button class="cat-pill" onclick="selectCat(this,'pet')">🐾 Pet</button>
+          <button class="cat-pill" onclick="selectCat(this,'hortifruti')">🥦 Hortifruti</button>
+          <button class="cat-pill" onclick="selectCat(this,'acougue')">🥩 Açougue</button>
+          <button class="cat-pill" onclick="selectCat(this,'padaria')">🍞 Padaria</button>
+          <button class="cat-pill" onclick="selectCat(this,'frios')">🧀 Frios & Laticínios</button>
+          <button class="cat-pill" onclick="selectCat(this,'bebidas')">🍺 Bebidas</button>        
+          <button class="cat-pill" onclick="selectCat(this,'mercearia')">🪵 Mercearia</button>       
           <button class="cat-pill" onclick="selectCat(this,'outros')">📦 Outros</button>
         </div>
         <div id="lojas-empty" class="empty-state">
           <div class="empty-icon">🔍</div>
           <p>Nenhuma loja encontrada<br><small>Seja o primeiro a cadastrar sua loja!</small></p>
         </div>
-        <div id="lojas-list" class="lojas-list" style="display:none"></div>
-      </div>
+        <div id="lojas-loading" style="display:none;">
+  <div class="skeleton"></div>
+  <div class="skeleton"></div>
+  <div class="skeleton"></div>
+</div>
+        
+<div id="lojas-list" class="lojas-list" style="display:none"></div>
+</div>
 
       <!-- STORE DETAIL TAB -->
       <div id="tab-loja-detail" class="tab-content">
@@ -669,6 +698,9 @@
                   <option value="mercado">🛒 Mercado</option>
                   <option value="farmacia">💊 Farmácia</option>
                   <option value="pet">🐾 Pet</option>
+                  <option value="Hortifruti">🥦 Hortifruti</option>
+                  <option value="Açougue">🥩 Açougue</option>
+                  <option value="Frios & Laticínios">🧀 Frios & Laticínios</option>
                 </select>
                 <span class="select-arrow"><svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg></span>
               </div>
@@ -741,7 +773,7 @@
   </div>
 
 </div>
-  
+
 <!-- Cart Modal -->
 <div class="modal-overlay" id="cart-modal">
   <div class="modal-sheet">
@@ -839,9 +871,9 @@
 
 <div id="support-panel">
   <div class="sp-header">
-    <div class="sp-avatar">🛵</div>
+    <div class="sp-avatar">🧑🏼‍💻</div>
     <div>
-      <div class="sp-title">Suporte LocalFlow</div>
+      <div class="sp-title">Suporte DeliveryApp</div>
       <div class="sp-status"><div class="sp-online"></div> Online 24h · IA</div>
     </div>
   </div>
@@ -971,36 +1003,26 @@ function enterApp() {
 }
 
 // ===== LOJAS =====
-function renderLojas() {
-  const list = document.getElementById('lojas-list');
-  const empty = document.getElementById('lojas-empty');
-  let stores = DB.stores();
-  if (currentCat !== 'todas') stores = stores.filter(s=>s.categoria===currentCat);
-  if (currentSearch.trim()) stores = stores.filter(s=>s.nome.toLowerCase().includes(currentSearch.toLowerCase()));
-  if (!stores.length) { empty.style.display='flex'; list.style.display='none'; return; }
-  empty.style.display='none'; list.style.display='flex';
-  const reviews = DB.reviews();
-  list.innerHTML = stores.map(s=>{
-    const sRevs = reviews.filter(r=>r.storeId===s.id);
-    const avg = sRevs.length ? sRevs.reduce((a,r)=>a+r.rating,0)/sRevs.length : null;
-    const fee = Number(s.deliveryFee||0);
-    return `<div class="loja-card" onclick="openStore(${s.id})">
-      <div class="loja-logo">${s.logo?`<img src="${s.logo}"/>`:(catEmojis[s.categoria]||'🏪')}</div>
-      <div class="loja-info">
-        <div class="loja-name">${s.nome}</div>
-        <div class="loja-cat">${catEmojis[s.categoria]||'📦'} ${s.categoria}</div>
-        ${s.descricao?`<div class="loja-desc">${s.descricao}</div>`:''}
-        <div class="loja-meta">
-          ${avg!==null?`<span style="font-size:11px">${starsHtml(avg,11)} (${sRevs.length})</span>`:''}
-          ${fee>0?`<span style="font-size:11px;color:#aaa">🛵 ${fmt(fee)}</span>`:'<span style="font-size:11px;color:#aaa">🛵 Grátis</span>'}
-        </div>
-      </div>
-      <div>
-        <div class="loja-badge ${s.isOpen!==false?'open':'closed'}">${s.isOpen!==false?'Aberta':'Fechada'}</div>
-        <svg style="display:block;margin:6px auto 0;color:#d1d5db" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
-      </div>
-    </div>`;
-  }).join('');
+function loadLojas() {
+  document.getElementById("lojas-loading").style.display = "block";
+  document.getElementById("lojas-list").style.display = "none";
+  document.getElementById("lojas-empty").style.display = "none";
+
+  setTimeout(() => {
+    document.getElementById("lojas-loading").style.display = "none";
+    renderLojas();
+  }, 700);
+}
+  
+  function loadLojas() {
+  document.getElementById("lojas-loading").style.display = "block";
+  document.getElementById("lojas-list").style.display = "none";
+  document.getElementById("lojas-empty").style.display = "none";
+
+  setTimeout(() => {
+    document.getElementById("lojas-loading").style.display = "none";
+    renderLojas(); // 👉 chama sua função normal
+  }, 700);
 }
 
 function selectCat(btn, cat) {
@@ -1214,7 +1236,7 @@ function afterOrder() {
 // ===== MEUS PEDIDOS =====
 function renderMeusPedidos() {
   const myOrders = DB.orders().filter(o=>o.userId===currentUser.id).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
-  const div = document.getElementById('meus-pedidos-list')
+  const div = document.getElementById('meus-pedidos-list');
   if (!myOrders.length) {
     div.innerHTML='<div class="empty-state"><div class="empty-icon">📋</div><p>Nenhum pedido ainda</p></div>';
     return;
@@ -1387,7 +1409,7 @@ function criarLoja() {
   DB.saveStores(stores);
   const users = DB.users();
   const idx = users.findIndex(u=>u.id===currentUser.id);
-  if(idx!==-1) { users[idx].isMerchant=true; DB.saveUsers(users); currentUser=users[idx]; }
+  if(idx!==-1) { users[idx].isMerchant=true; DB.saveUsers(users); currentUs=users[idx]; }
   mercantilOn=true;
   // reset
   logoDataUrl=null; gpsCoords=null;
@@ -1698,7 +1720,7 @@ let spLoading = false;
 function spMsgHtml(role, content) {
   const isUser = role==='user';
   return `<div class="sp-msg ${role}">
-    ${!isUser?'<div class="sp-icon">🛵</div>':''}
+    ${!isUser?'<div class="sp-icon">🧑🏼‍💻</div>':''}
     <div class="sp-bubble ${role}">${content}</div>
   </div>`;
 }
@@ -1713,10 +1735,10 @@ function spRender() {
   if(!el) return;
   let html = SP_HISTORY.map(m=>spMsgHtml(m.role, m.content)).join('');
   if (SP_HISTORY.length===0) {
-    html += spMsgHtml('assistant','Olá! 👋 Sou o assistente da LocalFlow. Como posso te ajudar hoje?');
+    html += spMsgHtml('assistant','Olá! 👋 Sou o assistente da DeliveryApp. Como posso te ajudar hoje?');
     html += `<div class="sp-quick">${SP_QUICK.map(q=>`<button class="sp-quick-btn" onclick="spAsk('${q}')">${q}</button>`).join('')}</div>`;
   }
-  if (spLoading) html += `<div class="sp-msg"><div class="sp-icon">🛵</div><div class="sp-bubble assistant"><div class="sp-typing"><span></span><span></span><span></span></div></div></div>`;
+  if (spLoading) html += `<div class="sp-msg"><div class="sp-icon">🧑🏼‍💻</div><div class="sp-bubble assistant"><div class="sp-typing"><span></span><span></span><span></span></div></div></div>`;
   el.innerHTML = html;
   spScrollBottom();
 }
@@ -1724,6 +1746,26 @@ function spRender() {
 function spGetFAQAnswer(msg) {
   for(const f of SP_FAQ) { if(f.q.test(msg)) return f.a; }
   return null;
+}
+  function gerarResposta(msg) {
+  msg = msg.toLowerCase();
+
+  if (msg.includes("erro") || msg.includes("bug"))
+    return "⚠️ Entendi! Pode me explicar melhor o problema? Assim consigo te ajudar mais rápido.";
+
+  if (msg.includes("pedido"))
+    return "📦 Você pode ver seus pedidos na aba Perfil → Meus Pedidos.";
+
+  if (msg.includes("loja"))
+    return "🏪 Para gerenciar sua loja, vá até o perfil mercantil.";
+
+  if (msg.includes("demora") || msg.includes("atraso"))
+    return "⏱️ Pode haver atraso dependendo da loja. Recomendo entrar em contato com o entregador.";
+
+  if (msg.includes("app"))
+    return "📱 Se o app não estiver funcionando bem, tente atualizar a página.";
+
+  return "🤖 Ainda estou aprendendo! Pode reformular sua pergunta?";
 }
 
 async function spSend() {
@@ -1737,13 +1779,23 @@ async function spSend() {
 
   // Try FAQ first for instant answer
   const faq = spGetFAQAnswer(text);
-  if (faq) {
-    await new Promise(r=>setTimeout(r,600));
-    spLoading=false;
-    SP_HISTORY.push({role:'assistant', content:faq});
-    spRender();
-    return;
-  }
+if (faq) {
+  await new Promise(r=>setTimeout(r,600));
+  spLoading=false;
+  SP_HISTORY.push({role:'assistant', content:faq});
+  spRender();
+  return;
+}
+
+// 🔥 RESPOSTA INTELIGENTE (fallback)
+await new Promise(r=>setTimeout(r,700));
+
+let resposta = gerarResposta(text);
+
+spLoading=false;
+SP_HISTORY.push({role:'assistant', content:resposta});
+spRender();
+return;
 
   // Try real AI API
   try {
