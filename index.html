@@ -1021,20 +1021,20 @@ function loadLojas() {
 
   setTimeout(() => {
     document.getElementById("lojas-loading").style.display = "none";
-    renderLojas(); // 👉 chama sua função normal
+    renderLojas();
   }, 700);
 }
-
+  
 function selectCat(btn, cat) {
   document.querySelectorAll('.cat-pill').forEach(p=>p.classList.remove('active'));
   btn.classList.add('active');
   currentCat = cat;
-  renderLojas();
+  loadLojas();
 }
 
 function filterLojas() {
   currentSearch = document.getElementById('search-input').value;
-  renderLojas();
+  loadLojas();
 }
 
 // ===== STORE DETAIL =====
