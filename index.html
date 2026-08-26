@@ -1,0 +1,1965 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Delivery app – tudo perto de vc</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    /* ===== CSS COMPLETO ===== */
+    * { border: none !important; outline: none !important; }
+    *, *::before, *::after { font-family: 'Inter', sans-serif; box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
+    body { background: #f5f5f5; color: #0a0a0a; overflow-x: hidden; min-height: 100vh; }
+    input, textarea, select, button { font-family: inherit; }
+    .rounded-xl { border-radius: 16px; }
+    .rounded-2xl { border-radius: 20px; }
+    .rounded-full { border-radius: 9999px; }
+    .rounded-lg { border-radius: 12px; }
+    .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes bdot { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-6px)} }
+    @keyframes fadeIn { from { opacity:0; transform:translateY(-10px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.7; } }
+    @keyframes bounce { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+    .animate-spin { animation: spin 1s linear infinite; }
+    .animate-bounce { animation: bdot 1.4s ease-in-out infinite; }
+    .animate-pulse { animation: pulse 2s ease-in-out infinite; }
+    .page { display: none; }
+    .page.active { display: block; }
+    #toast-container { position:fixed; top:16px; left:50%; transform:translateX(-50%); z-index:9999; display:flex; flex-direction:column; gap:8px; pointer-events:none; width:calc(100% - 32px); max-width:400px; }
+    .toast { border-radius:12px; padding:12px 16px; font-size:13px; font-weight:600; box-shadow:0 4px 24px rgba(0,0,0,.2); opacity:0; transform:translateY(-10px); transition:all .3s ease; pointer-events:auto; color:#fff; }
+    .toast.show { opacity:1; transform:translateY(0); }
+    .toast.success { background:#16a34a; }
+    .toast.error { background:#dc2626; }
+    .toast.default { background:#1a1a1a; }
+    .toast.location { background:#3b82f6; }
+    .line-clamp-2 { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+    .truncate { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .grid { display:grid; }
+    .grid-cols-2 { grid-template-columns: repeat(2, 1fr); }
+    .gap-2 { gap:8px; }
+    .gap-3 { gap:12px; }
+    .flex { display:flex; }
+    .flex-col { flex-direction:column; }
+    .flex-1 { flex:1; }
+    .items-center { align-items:center; }
+    .justify-center { justify-content:center; }
+    .justify-between { justify-content:space-between; }
+    .justify-evenly { justify-content:space-evenly; }
+    .flex-wrap { flex-wrap:wrap; }
+    .flex-shrink-0 { flex-shrink:0; }
+    .min-w-0 { min-width:0; }
+    .space-y-3 > * + * { margin-top:12px; }
+    .space-y-4 > * + * { margin-top:16px; }
+    .space-y-2 > * + * { margin-top:8px; }
+    .space-y-1 > * + * { margin-top:4px; }
+    .p-2 { padding:8px; }
+    .p-3 { padding:12px; }
+    .p-4 { padding:16px; }
+    .p-5 { padding:20px; }
+    .px-2 { padding-left:8px; padding-right:8px; }
+    .px-3 { padding-left:12px; padding-right:12px; }
+    .px-4 { padding-left:16px; padding-right:16px; }
+    .px-5 { padding-left:20px; padding-right:20px; }
+    .py-1 { padding-top:4px; padding-bottom:4px; }
+    .py-2 { padding-top:8px; padding-bottom:8px; }
+    .py-3 { padding-top:12px; padding-bottom:12px; }
+    .py-6 { padding-top:24px; padding-bottom:24px; }
+    .py-8 { padding-top:32px; padding-bottom:32px; }
+    .py-10 { padding-top:40px; padding-bottom:40px; }
+    .py-12 { padding-top:48px; padding-bottom:48px; }
+    .pt-12 { padding-top:48px; }
+    .pb-4 { padding-bottom:16px; }
+    .pb-6 { padding-bottom:24px; }
+    .pb-8 { padding-bottom:32px; }
+    .pb-24 { padding-bottom:96px; }
+    .pb-32 { padding-bottom:128px; }
+    .mt-1 { margin-top:4px; }
+    .mt-2 { margin-top:8px; }
+    .mt-3 { margin-top:12px; }
+    .mt-4 { margin-top:16px; }
+    .mt-6 { margin-top:24px; }
+    .mb-1 { margin-bottom:4px; }
+    .mb-2 { margin-bottom:8px; }
+    .mb-3 { margin-bottom:12px; }
+    .mb-4 { margin-bottom:16px; }
+    .ml-auto { margin-left:auto; }
+    .mx-auto { margin-left:auto; margin-right:auto; }
+    .w-full { width:100%; }
+    .h-10 { height:40px; }
+    .h-11 { height:44px; }
+    .h-12 { height:48px; }
+    .h-16 { height:64px; }
+    .h-20 { height:80px; }
+    .h-28 { height:112px; }
+    .h-64 { height:256px; }
+    .max-w-sm { max-width:384px; }
+    .max-w-lg { max-width:400px; }
+    .min-h-screen { min-height:100vh; }
+    .min-w-60 { min-width:60px; }
+    .max-w-80 { max-width:80%; }
+    .max-w-180 { max-width:180px; }
+    .max-w-70 { max-width:70%; }
+    .w-2 { width:8px; }
+    .w-2\.5 { width:10px; }
+    .w-4 { width:16px; }
+    .w-6 { width:24px; }
+    .w-7 { width:28px; }
+    .w-8 { width:32px; }
+    .w-10 { width:40px; }
+    .w-12 { width:48px; }
+    .w-16 { width:64px; }
+    .w-20 { width:80px; }
+    .h-2 { height:8px; }
+    .h-2\.5 { height:10px; }
+    .h-4 { height:16px; }
+    .h-6 { height:24px; }
+    .h-7 { height:28px; }
+    .h-8 { height:32px; }
+    .h-10 { height:40px; }
+    .h-12 { height:48px; }
+    .h-16 { height:64px; }
+    .h-20 { height:80px; }
+    .bg-white { background:#fff; }
+    .bg-gray-50 { background:#f9fafb; }
+    .bg-gray-100 { background:#f3f4f6; }
+    .bg-gray-400 { background:#9ca3af; }
+    .bg-gray-900 { background:#111827; }
+    .bg-red-50 { background:#fef2f2; }
+    .bg-red-600 { background:#dc2626; }
+    .bg-red-100 { background:#fee2e2; }
+    .bg-green-500 { background:#22c55e; }
+    .bg-green-600 { background:#16a34a; }
+    .bg-green-100 { background:#dcfce7; }
+    .bg-green-400 { background:#4ade80; }
+    .bg-blue-50 { background:#eff6ff; }
+    .bg-blue-100 { background:#dbeafe; }
+    .bg-blue-600 { background:#2563eb; }
+    .bg-yellow-100 { background:#fef9c3; }
+    .bg-yellow-50 { background:#fefce8; }
+    .bg-orange-100 { background:#ffedd5; }
+    .bg-sky-100 { background:#e0f2fe; }
+    .bg-black\/20 { background:rgba(0,0,0,.2); }
+    .bg-white\/10 { background:rgba(255,255,255,.1); }
+    .bg-white\/20 { background:rgba(255,255,255,.2); }
+    .bg-transparent { background:transparent; }
+    .text-white { color:#fff; }
+    .text-gray-300 { color:#d1d5db; }
+    .text-gray-400 { color:#9ca3af; }
+    .text-gray-500 { color:#6b7280; }
+    .text-gray-700 { color:#374151; }
+    .text-gray-900 { color:#111827; }
+    .text-red-600 { color:#dc2626; }
+    .text-red-400 { color:#f87171; }
+    .text-green-500 { color:#22c55e; }
+    .text-green-600 { color:#16a34a; }
+    .text-green-700 { color:#15803d; }
+    .text-blue-600 { color:#2563eb; }
+    .text-blue-800 { color:#1e40af; }
+    .text-yellow-800 { color:#92400e; }
+    .text-orange-800 { color:#9a3412; }
+    .text-sky-800 { color:#075985; }
+    .text-red-800 { color:#991b1b; }
+    .text-red-600\/80 { color:rgba(220,38,38,.8); }
+    .bg-gradient-to-b { background-image:linear-gradient(to bottom, var(--tw-gradient-from), var(--tw-gradient-to)); }
+    .bg-gradient-to-r { background-image:linear-gradient(to right, var(--tw-gradient-from), var(--tw-gradient-to)); }
+    .bg-gradient-to-br { background-image:linear-gradient(to bottom right, var(--tw-gradient-from), var(--tw-gradient-to)); }
+    .from-red-600 { --tw-gradient-from:#dc2626; }
+    .to-red-800 { --tw-gradient-to:#991b1b; }
+    .from-red-50 { --tw-gradient-from:#fef2f2; }
+    .to-red-100 { --tw-gradient-to:#fee2e2; }
+    .text-center { text-align:center; }
+    .text-left { text-align:left; }
+    .text-xs { font-size:12px; line-height:16px; }
+    .text-\[10px\] { font-size:10px; line-height:14px; }
+    .text-\[11px\] { font-size:11px; line-height:16px; }
+    .text-\[9px\] { font-size:9px; }
+    .text-sm { font-size:14px; line-height:20px; }
+    .text-base { font-size:16px; line-height:24px; }
+    .text-lg { font-size:18px; line-height:28px; }
+    .text-xl { font-size:20px; line-height:28px; }
+    .text-2xl { font-size:24px; }
+    .text-3xl { font-size:30px; }
+    .text-4xl { font-size:36px; }
+    .text-5xl { font-size:48px; }
+    .font-medium { font-weight:500; }
+    .font-semibold { font-weight:600; }
+    .font-bold { font-weight:700; }
+    .font-extrabold { font-weight:800; }
+    .uppercase { text-transform:uppercase; }
+    .tracking-wider { letter-spacing:.05em; }
+    .opacity-70 { opacity:.7; }
+    .opacity-80 { opacity:.8; }
+    .opacity-90 { opacity:.9; }
+    .cursor-pointer { cursor:pointer; }
+    .hover\:bg-gray-50:hover { background:#f9fafb; }
+    .hover\:bg-white\/30:hover { background:rgba(255,255,255,.3); }
+    .hover\:bg-white\/10:hover { background:rgba(255,255,255,.1); }
+    .hover\:shadow-lg:hover { box-shadow:0 8px 25px rgba(0,0,0,0.1); }
+    .hover\:underline:hover { text-decoration:underline; }
+    .transition-colors { transition:color .15s, background .15s; }
+    .transition-shadow { transition:box-shadow .15s; }
+    .transition-all { transition:all .15s; }
+    .outline-none { outline:none; }
+    .disabled\:opacity-70:disabled { opacity:.7; }
+    .pointer-events-auto { pointer-events:auto; }
+    .accent-red-600 { accent-color:#dc2626; }
+    .last\:border-b-0:last-child { border-bottom:none; }
+    .bg-transparent { background:transparent; }
+    .whitespace-nowrap { white-space:nowrap; }
+    .safe-bottom::after { content:''; display:block; height:env(safe-area-inset-bottom); }
+    .cart-bar { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); z-index: 40; width: calc(100% - 2rem); max-width: calc(400px - 2rem); }
+    .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; z-index: 50; background: white; display: flex; justify-content: center; align-items: center; padding: 0 16px; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); }
+    .bottom-nav-inner { max-width: 400px; width: 100%; display: flex; justify-content: space-evenly; align-items: center; height: 64px; }
+    .nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 0; transition: all 0.2s ease; max-width: 80px; background: transparent !important; cursor: pointer; }
+    .back-button { color: white; opacity: 0.8; transition: opacity 0.2s ease; background: transparent; display: inline-flex; align-items: center; gap: 4px; font-size: 14px; margin-bottom: 16px; }
+    .back-button:hover { opacity: 1; }
+    .category-btn { background: transparent !important; color: #666 !important; border-radius: 40px !important; transition: all 0.2s ease; }
+    .category-btn-active { background: #dc2626 !important; color: white !important; box-shadow: 0 4px 12px rgba(220,38,38,0.3); border-radius: 40px !important; }
+    .profile-tabs-container { display: flex; gap: 8px; width: 100%; flex-wrap: wrap; }
+    .profile-tab { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 0; transition: all 0.2s ease; border-radius: 16px; cursor: pointer; min-width: 60px; }
+    .profile-tab-active { background: white !important; color: #dc2626 !important; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .profile-tab-inactive { background: rgba(255,255,255,0.1) !important; color: white !important; }
+    .map-filter-btn { padding: 8px 18px; border-radius: 40px; font-size: 12px; font-weight: 600; transition: all 0.2s ease; cursor: pointer; background: transparent !important; }
+    .map-filter-btn-active { background: #dc2626 !important; color: white; box-shadow: 0 2px 8px rgba(220,38,38,0.3); }
+    .map-filter-btn-inactive { background: transparent !important; color: #666 !important; }
+    .store-card { background: white; border-radius: 20px; overflow: hidden; transition: all 0.2s ease; box-shadow: 0 2px 8px rgba(0,0,0,0.05); cursor: pointer; }
+    .store-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
+    #map { height: 320px; width: calc(100% - 32px); margin: 0 16px 20px 16px; border-radius: 24px; z-index: 1; box-shadow: 0 8px 25px rgba(0,0,0,0.1); overflow: hidden; }
+    .featured-banner { margin: 16px; background: linear-gradient(135deg, #dc2626, #b91c1c, #991b1b); border-radius: 24px; padding: 20px; color: white; position: relative; overflow: hidden; box-shadow: 0 8px 25px rgba(220,38,38,0.3); transition: all 0.3s ease; cursor: pointer; }
+    .featured-banner:hover { transform: translateY(-3px); box-shadow: 0 12px 30px rgba(220,38,38,0.4); }
+    .featured-banner::before { content: ''; position: absolute; top: -50%; right: -20%; width: 200px; height: 200px; background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 70%); border-radius: 50%; }
+    .featured-banner::after { content: '🔥'; position: absolute; bottom: 10px; right: 20px; font-size: 60px; opacity: 0.3; }
+    .banner-emoji { font-size: 48px; margin-bottom: 8px; display: inline-block; animation: bounce 2s ease-in-out infinite; }
+    .banner-tag { display: inline-block; background: rgba(255,255,255,0.2); backdrop-filter: blur(10px); padding: 4px 12px; border-radius: 30px; font-size: 10px; font-weight: bold; letter-spacing: 1px; margin-bottom: 12px; }
+    .banner-title { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+    .banner-desc { font-size: 12px; opacity: 0.9; margin-bottom: 16px; max-width: 70%; }
+    .banner-button { display: inline-block; background: white; color: #dc2626; padding: 8px 20px; border-radius: 40px; font-size: 12px; font-weight: bold; transition: all 0.2s ease; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .banner-button:hover { transform: scale(1.02); background: #fef2f2; }
+    #page-store { background: #f5f5f5; }
+    .store-header-red { background: linear-gradient(135deg, #dc2626, #b91c1c, #991b1b); padding: 20px 16px 24px 16px; border-radius: 0 0 28px 28px; color: white; position: relative; overflow: hidden; margin-bottom: 0; }
+    .store-header-red::before { content: ''; position: absolute; top: -30%; right: -20%; width: 180px; height: 180px; background: radial-gradient(circle, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0) 70%); border-radius: 50%; }
+    .store-header-red::after { content: '⭐'; position: absolute; bottom: 10px; right: 20px; font-size: 55px; opacity: 0.12; pointer-events: none; }
+    .product-item { background: white; margin-bottom: 16px; border-radius: 16px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); transition: all 0.2s ease; display: flex; align-items: center; gap: 12px; }
+    .product-icon-frame { width: 48px; height: 48px; background: #fef2f2; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
+    .product-info { flex: 1; }
+    .product-name { font-weight: 800; font-size: 16px; color: #1f2937; margin-bottom: 4px; }
+    .product-desc { font-size: 13px; color: #6b7280; margin-bottom: 4px; }
+    .product-price { font-weight: 700; font-size: 16px; color: #dc2626; margin-bottom: 4px; }
+    .product-stock { font-size: 12px; color: #9ca3af; margin-bottom: 8px; }
+    .add-button { background: #dc2626; color: white; padding: 8px 16px; border-radius: 40px; font-size: 13px; font-weight: 600; cursor: pointer; display: inline-block; transition: all 0.2s ease; }
+    .add-button:hover { background: #b91c1c; transform: scale(1.02); }
+    .quantity-control { display: flex; align-items: center; gap: 12px; background: #fef2f2; padding: 4px 12px; border-radius: 50px; width: fit-content; }
+    .qty-btn { width: 32px; height: 32px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; color: #dc2626; cursor: pointer; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .qty-value { font-weight: 600; font-size: 16px; min-width: 28px; text-align: center; }
+    .qty-total { font-weight: 600; font-size: 14px; color: #dc2626; margin-left: 8px; }
+    .menu-header-simple { display: flex; justify-content: space-between; padding: 16px; background: #f5f5f5; border-bottom: 1px solid #e5e7eb; }
+    .menu-title { font-weight: 700; font-size: 16px; }
+    .menu-badge { color: #6b7280; font-size: 14px; }
+    .products-container { padding: 0 16px 80px; background: #f5f5f5; }
+    .social-divider { display: flex; align-items: center; margin: 20px 0; gap: 12px; }
+    .social-divider::before, .social-divider::after { content: ''; flex: 1; height: 1px; background: #e5e7eb; }
+    .social-divider span { font-size: 13px; color: #9ca3af; font-weight: 500; }
+    .social-buttons { display: flex; flex-direction: column; gap: 10px; }
+    .social-btn { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 12px; border-radius: 40px; font-weight: 600; font-size: 14px; transition: all 0.2s ease; cursor: pointer; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .social-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .social-btn-google { color: #ea4335; }
+    .social-btn-google:hover { background: #fef2f2; }
+    .social-btn-facebook { color: #1877f2; }
+    .social-btn-facebook:hover { background: #f0f4fe; }
+    .social-btn-phone { color: #059669; }
+    .social-btn-phone:hover { background: #ecfdf5; }
+    .social-btn svg { width: 24px; height: 24px; flex-shrink: 0; }
+    .auth-container { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; padding: 24px; background: linear-gradient(135deg, #dc2626, #991b1b); }
+    .auth-logo { text-align: center; margin-bottom: 32px; animation: fadeIn 0.6s ease; }
+    .auth-logo span { font-size: 80px; display: inline-block; animation: pulse 2s infinite; }
+    .auth-logo h1 { color: white; font-size: 32px; margin-top: 16px; font-weight: 800; }
+    .auth-logo p { color: rgba(255,255,255,0.8); margin-top: 8px; }
+    .auth-card { background: white; border-radius: 32px; padding: 32px 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.2); animation: fadeIn 0.5s ease; }
+    .auth-input { margin-bottom: 16px; }
+    .auth-input label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; color: #374151; }
+    .auth-input input { width: 100%; padding: 12px; background: #f1f5f9; border-radius: 16px; }
+    .auth-btn { width: 100%; background: #dc2626; color: white; padding: 14px; border-radius: 40px; font-weight: 700; font-size: 16px; margin-top: 8px; cursor: pointer; transition: 0.2s; }
+    .auth-btn:hover { background: #b91c1c; transform: translateY(-2px); }
+    .auth-footer { text-align: center; margin-top: 20px; font-size: 14px; color: #64748b; }
+    .auth-footer button { color: #dc2626; font-weight: 600; background: none; cursor: pointer; }
+    .auth-forgot-password { text-align: right; margin-top: 4px; font-size: 13px; }
+    .auth-forgot-password button { color: #dc2626; font-weight: 500; background: none; cursor: pointer; text-decoration: underline; }
+    .auth-forgot-password button:hover { color: #b91c1c; }
+    #chat-list-view { background: #f5f5f5; }
+    #chat-ai-view { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #f5f5f5; z-index: 100; display: none; flex-direction: column; }
+    #chat-ai-view.active { display: flex; }
+    .chat-header { background: linear-gradient(135deg, #dc2626, #b91c1c); padding: 16px 20px; padding-top: 48px; display: flex; align-items: center; gap: 12px; color: white; border-radius: 0 0 24px 24px; box-shadow: 0 4px 12px rgba(220,38,38,0.3); }
+    .chat-header .back-btn { font-size: 24px; cursor: pointer; opacity: 0.8; transition: 0.2s; background: none; color: white; padding: 4px; }
+    .chat-header .back-btn:hover { opacity: 1; }
+    .chat-header .avatar { width: 44px; height: 44px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; backdrop-filter: blur(4px); }
+    .chat-header .info { flex: 1; }
+    .chat-header .info h3 { font-size: 18px; font-weight: 700; margin: 0; }
+    .chat-header .info p { font-size: 12px; opacity: 0.8; margin: 0; display: flex; align-items: center; gap: 6px; }
+    .chat-header .status-dot { width: 8px; height: 8px; background: #22c55e; border-radius: 50%; display: inline-block; animation: pulse 1.5s infinite; }
+    .chat-messages-area { flex: 1; overflow-y: auto; padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; background: #f5f5f5; }
+    .chat-messages-area .msg { max-width: 80%; padding: 12px 16px; border-radius: 20px; font-size: 14px; line-height: 1.5; animation: fadeIn 0.2s ease; word-break: break-word; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+    .chat-messages-area .msg-user { align-self: flex-end; background: #dc2626; color: white; border-bottom-right-radius: 4px; }
+    .chat-messages-area .msg-bot { align-self: flex-start; background: white; color: #1f2937; border-bottom-left-radius: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .chat-messages-area .msg-bot .bot-name { font-weight: 600; color: #dc2626; margin-right: 4px; }
+    .chat-messages-area .quick-questions { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 8px; }
+    .chat-messages-area .quick-questions .quick-btn { background: #fef2f2; color: #dc2626; font-size: 12px; padding: 8px 14px; border-radius: 30px; cursor: pointer; transition: 0.2s; font-weight: 500; }
+    .chat-messages-area .quick-questions .quick-btn:hover { background: #dc2626; color: white; transform: translateY(-1px); }
+    .chat-input-area { background: white; padding: 12px 20px; padding-bottom: 20px; display: flex; gap: 12px; align-items: center; box-shadow: 0 -2px 8px rgba(0,0,0,0.03); }
+    .chat-input-area input { flex: 1; height: 44px; padding: 0 16px; border-radius: 40px !important; background: #f3f4f6 !important; font-size: 14px; outline: none; transition: 0.2s; }
+    .chat-input-area input:focus { background: white !important; box-shadow: 0 0 0 3px rgba(220,38,38,0.1); }
+    .chat-input-area .send-btn { width: 44px; height: 44px; background: #dc2626; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; transition: 0.2s; flex-shrink: 0; }
+    .chat-input-area .send-btn:hover { background: #b91c1c; transform: scale(1.04); }
+    .chat-input-area .send-btn:active { transform: scale(0.95); }
+    .chat-messages-area .typing-indicator { align-self: flex-start; background: white; padding: 10px 16px; border-radius: 20px; display: flex; gap: 4px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .typing-indicator span { width: 8px; height: 8px; background: #9ca3af; border-radius: 50%; animation: bdot 1.4s infinite; }
+    .typing-indicator span:nth-child(2) { animation-delay: 0.15s; }
+    .typing-indicator span:nth-child(3) { animation-delay: 0.3s; }
+    .chat-list-item { background: white; border-radius: 16px; padding: 16px; margin-bottom: 12px; display: flex; align-items: center; gap: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); cursor: pointer; transition: 0.2s; }
+    .chat-list-item:hover { background: #f9fafb; }
+    .chat-list-item .avatar { width: 48px; height: 48px; background: #fef2f2; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0; }
+    .chat-list-item .info { flex: 1; }
+    .chat-list-item .info .name { font-weight: 700; font-size: 15px; }
+    .chat-list-item .info .last-msg { font-size: 13px; color: #6b7280; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .chat-list-item .badge { background: #dc2626; color: white; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 30px; }
+    .permission-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 200; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
+    .permission-card { background: white; border-radius: 32px; padding: 32px 24px; margin: 20px; max-width: 320px; text-align: center; animation: fadeIn 0.3s ease; }
+    .permission-icon { font-size: 64px; margin-bottom: 16px; display: inline-block; animation: bounce 1s ease infinite; }
+    .permission-title { font-size: 20px; font-weight: 800; margin-bottom: 8px; color: #1f2937; }
+    .permission-desc { font-size: 14px; color: #6b7280; margin-bottom: 24px; }
+    .permission-buttons { display: flex; gap: 12px; justify-content: center; }
+    .permission-btn { padding: 12px 24px; border-radius: 40px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.2s ease; }
+    .permission-btn-primary { background: #dc2626; color: white; }
+    .permission-btn-secondary { background: #f3f4f6; color: #4b5563; }
+    .permission-btn-primary:hover { background: #b91c1c; transform: scale(1.02); }
+    .location-badge { position: fixed; top: 100px; right: 16px; background: white; padding: 8px 12px; border-radius: 40px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 8px; z-index: 45; font-size: 12px; font-weight: 500; cursor: pointer; }
+    .location-dot { width: 8px; height: 8px; border-radius: 50%; background: #22c55e; animation: pulse 1.5s infinite; }
+    .search-container { position: relative; width: 100%; }
+    .search-icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-size: 18px; color: #9ca3af; pointer-events: none; z-index: 1; }
+    .search-input { width: 100%; padding-left: 44px !important; padding-right: 16px !important; height: 44px; background: white !important; border-radius: 30px !important; font-size: 14px; outline: none; }
+    .empty-state-full { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; min-height: 50vh; padding: 48px 24px; background: white; border-radius: 24px; margin: 0 auto; }
+    .empty-emoji { font-size: 80px; margin-bottom: 20px; opacity: 0.8; }
+    .empty-title { font-size: 18px; font-weight: 800; color: #374151; margin-bottom: 12px; }
+    .empty-button { background: linear-gradient(135deg, #dc2626, #b91c1c); color: white; padding: 12px 28px; border-radius: 40px; font-size: 14px; font-weight: 600; cursor: pointer; display: inline-block; }
+    .store-grid-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; padding-bottom: 16px; }
+    .header-badge { display: inline-flex; align-items: center; gap: 4px; background: rgba(255,255,255,0.2); backdrop-filter: blur(4px); padding: 4px 10px; border-radius: 30px; font-size: 10px; font-weight: 600; }
+    .header-badge-green { background: #22c55e; color: white; }
+    .header-badge-gray { background: #6b7280; color: white; }
+    .btn-green { background: linear-gradient(135deg, #22c55e, #16a34a); color: white; box-shadow: 0 2px 8px rgba(34,197,94,0.3); }
+    .btn-green:hover { background: linear-gradient(135deg, #16a34a, #15803d); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(34,197,94,0.4); }
+    .map-loading { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.9); display: flex; align-items: center; justify-content: center; z-index: 10; border-radius: 24px; font-size: 14px; color: #dc2626; gap: 8px; }
+    .lojista-store-card { background: white; border-radius: 16px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); transition: all 0.2s; cursor: pointer; }
+    .lojista-store-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
+    .back-btn-card { display: inline-flex; align-items: center; gap: 6px; color: #dc2626; font-weight: 600; font-size: 14px; cursor: pointer; background: none; margin-bottom: 16px; }
+    .back-btn-card:hover { text-decoration: underline; }
+    .product-card { background: white; border-radius: 12px; padding: 12px 16px; display: flex; align-items: center; gap: 12px; margin-bottom: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.05); }
+    .product-card:last-child { margin-bottom: 0; }
+    .switch-container { display: flex; align-items: center; gap: 12px; padding: 4px 0; }
+    .switch { position: relative; display: inline-block; width: 48px; height: 26px; flex-shrink: 0; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .3s; border-radius: 26px; }
+    .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
+    input:checked + .slider { background-color: #dc2626; }
+    input:checked + .slider:before { transform: translateX(22px); }
+    .switch-label { font-size: 14px; font-weight: 500; color: #374151; }
+  </style>
+</head>
+<body>
+<div id="toast-container"></div>
+<div id="location-modal" class="permission-modal" style="display: none;">
+  <div class="permission-card">
+    <div class="permission-icon">📍</div>
+    <div class="permission-title">Compartilhar localização</div>
+    <div class="permission-desc">Para encontrar lojas próximas e acompanhar suas entregas em tempo real</div>
+    <div class="permission-buttons">
+      <button class="permission-btn permission-btn-secondary" onclick="denyLocation()">Agora não</button>
+      <button class="permission-btn permission-btn-primary" onclick="allowLocation()">Permitir</button>
+    </div>
+  </div>
+</div>
+<div id="notif-modal" class="permission-modal" style="display: none;">
+  <div class="permission-card">
+    <div class="permission-icon">🔔</div>
+    <div class="permission-title">Receber notificações</div>
+    <div class="permission-desc">Fique sabendo sobre novos pedidos, promoções e status de entrega</div>
+    <div class="permission-buttons">
+      <button class="permission-btn permission-btn-secondary" onclick="denyNotification()">Agora não</button>
+      <button class="permission-btn permission-btn-primary" onclick="allowNotification()">Permitir</button>
+    </div>
+  </div>
+</div>
+<div id="auth-container" class="auth-container">
+  <div class="auth-logo"><span>🛵</span><h1>Delivery app</h1><p>tudo perto de vc</p></div>
+  <div class="auth-card">
+    <div id="auth-login-form">
+      <div class="auth-input"><label>E-mail</label><input type="email" id="login-email" placeholder="seu@email.com" aria-label="E-mail" /></div>
+      <div class="auth-input"><label>Senha</label><input type="password" id="login-password" placeholder="••••••••" aria-label="Senha" /></div>
+      <div class="auth-forgot-password"><button onclick="resetPassword()" id="forgot-password-btn">Esqueceu a senha?</button></div>
+      <button id="login-btn" class="auth-btn">Entrar</button>
+      <div class="social-divider"><span>ou continue com</span></div>
+      <div class="social-buttons">
+        <button id="google-btn" class="social-btn social-btn-google"><svg viewBox="0 0 48 48" width="24" height="24"><path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/><path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/><path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/><path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/></svg> Google</button>
+        <button id="facebook-btn" class="social-btn social-btn-facebook"><svg viewBox="0 0 48 48" width="24" height="24"><path fill="#1877F2" d="M48,24c0,13.255-10.745,24-24,24S0,37.255,0,24S10.745,0,24,0S48,10.745,48,24z"/><path fill="#FFFFFF" d="M32.424,16.409h-3.859c-0.453,0-1.082,0.567-1.082,1.414v2.586h4.941l-0.598,4.719h-4.343V37.56h-5.265V25.128h-4.162v-4.719h4.162v-2.25c0-2.941,2.164-5.328,4.831-5.328h4.045V16.409z"/></svg> Facebook</button>
+        <button id="phone-btn" class="social-btn social-btn-phone"><span>📱</span> Telefone</button>
+      </div>
+      <div class="auth-footer">Não tem conta? <button id="show-register-btn">Cadastre-se</button></div>
+    </div>
+    <div id="auth-register-form" style="display: none;">
+      <div class="auth-input"><label>Nome</label><input type="text" id="register-name" placeholder="Seu nome" aria-label="Nome" /></div>
+      <div class="auth-input"><label>E-mail</label><input type="email" id="register-email" placeholder="seu@email.com" aria-label="E-mail" /></div>
+      <div class="auth-input"><label>Senha</label><input type="password" id="register-password" placeholder="••••••••" aria-label="Senha" /></div>
+      <button id="register-btn" class="auth-btn">Criar conta</button>
+      <div class="auth-footer">Já tem conta? <button id="show-login-btn">Fazer login</button></div>
+    </div>
+  </div>
+</div>
+<div id="app-main" class="max-w-lg mx-auto min-h-screen relative" style="display: none;">
+  <div id="page-home" class="page active pb-24">
+    <div class="bg-gradient-to-b from-red-600 to-red-800 text-white px-4 pt-12 pb-8" style="border-radius: 0 0 24px 24px;">
+      <div class="flex items-center justify-between mb-1">
+        <div><p class="text-sm opacity-90" id="greeting-text">Bom dia! 👋</p><h1 class="text-xl font-extrabold">O que você quer pedir?</h1></div>
+        <div class="flex items-center gap-2">
+          <div class="flex items-center gap-1.5 bg-white/20 rounded-full px-3 py-1"><span class="w-2 h-2 bg-green-400 animate-pulse rounded-full" id="motoboy-dot"></span><span class="text-[11px] font-semibold" id="motoboy-count">0 motoboys</span></div>
+          <div class="relative" id="notif-bell-wrap">
+            <button onclick="toggleNotifPanel()" class="relative p-2 bg-white/20 hover:bg-white/30 transition-colors rounded-full" aria-label="Notificações"><span class="text-lg">🔔</span><span id="notif-badge" style="display:none" class="absolute -top-0.5 -right-0.5 w-4 h-4 bg-yellow-400 text-black text-[9px] font-extrabold rounded-full flex items-center justify-center">0</span></button>
+            <div id="notif-panel" style="display:none" class="absolute right-0 top-12 w-80 bg-white shadow-2xl z-50 overflow-hidden rounded-2xl">
+              <div class="flex items-center justify-between px-4 py-3"><span class="font-extrabold text-sm text-gray-900">Notificações</span><div class="flex items-center gap-2"><button id="mark-all-btn" onclick="markAllRead()" class="text-[10px] text-red-600 font-bold hover:underline" style="display:none">Marcar todas lidas</button><button onclick="toggleNotifPanel()" class="text-gray-400 text-lg" aria-label="Fechar">✕</button></div></div>
+              <div id="notif-list" class="max-h-80 overflow-y-auto"><div class="py-10 text-center text-gray-400"><div class="text-3xl mb-2">🔔</div><p class="text-sm">Nenhuma notificação</p></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="relative mt-4"><div class="search-container"><span class="search-icon">🔍</span><input id="search-input" type="text" placeholder="Buscar lojas ou produtos..." oninput="renderStoreGrid()" class="search-input" aria-label="Buscar lojas" /></div></div>
+    </div>
+    <div id="featured-banner"></div>
+    <div class="flex gap-3 overflow-x-auto py-3 px-4 scrollbar-hide" id="category-filter"></div>
+    <div class="px-4 mt-2"><div class="flex items-center justify-between mb-3"><h2 class="font-bold text-base">Todas as lojas</h2><span class="text-xs text-gray-400" id="store-count">0 encontradas</span></div><div id="store-grid"><div class="flex justify-center py-12"><div class="w-6 h-6 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div></div></div></div>
+    <div id="cart-bar-home"></div>
+  </div>
+  <div id="page-store" class="page pb-24"><div id="store-detail-content"></div><div id="cart-bar-store"></div></div>
+  <div id="page-checkout" class="page pb-32">
+    <div class="bg-gradient-to-b from-red-600 to-red-800 text-white px-4 pt-12 pb-6" style="border-radius: 0 0 24px 24px;">
+      <button onclick="goBack()" class="back-button">← Voltar</button>
+      <h1 class="text-xl font-extrabold">🛒 Finalizar pedido</h1>
+    </div>
+    <div id="checkout-content" class="px-4 mt-4 space-y-4"></div>
+    <div class="px-4 pb-8" style="margin-top: 20px;">
+      <button id="confirm-btn" onclick="confirmOrder()" class="w-full h-12 bg-red-600 text-white font-bold rounded-2xl shadow-lg hover:shadow-xl transition-all disabled:opacity-70" style="display: none;">Confirmar</button>
+    </div>
+  </div>
+  <div id="page-orders" class="page pb-24">
+    <div class="bg-gradient-to-b from-red-600 to-red-800 text-white px-4 pt-12 pb-6" style="border-radius: 0 0 24px 24px;">
+      <button onclick="goBack()" class="back-button">← Voltar</button>
+      <h1 class="text-xl font-extrabold">📋 Meus Pedidos</h1>
+    </div>
+    <div id="orders-list" class="px-4 mt-4 space-y-3"></div>
+  </div>
+  <div id="page-mapa" class="page pb-24">
+    <div class="bg-gradient-to-b from-red-600 to-red-800 text-white px-4 pt-12 pb-6" style="border-radius: 0 0 24px 24px;">
+      <button onclick="goBack()" class="back-button">← Voltar</button>
+      <h1 class="text-xl font-extrabold">🗺️ Mapa</h1>
+      <p class="text-xs opacity-80 mt-1">Lojas e entregadores próximos</p>
+    </div>
+    <div id="map" class="mt-4"></div>
+    <div class="flex gap-2 px-4 overflow-x-auto scrollbar-hide pb-3">
+      <button class="map-filter-btn map-filter-btn-active" data-filter="tudo" onclick="setMapFilter('tudo')">Tudo</button>
+      <button class="map-filter-btn map-filter-btn-inactive" data-filter="lojas" onclick="setMapFilter('lojas')">🏪 Lojas</button>
+      <button class="map-filter-btn map-filter-btn-inactive" data-filter="entregadores" onclick="setMapFilter('entregadores')">🏍️ Entregadores</button>
+    </div>
+    <div class="px-4">
+      <input id="map-search" type="text" placeholder="Buscar no mapa..." oninput="renderMapList()" class="w-full h-10 px-3 text-sm outline-none rounded-2xl" style="background:white !important" aria-label="Buscar no mapa" />
+    </div>
+    <div id="map-list" class="px-4 mt-4 space-y-2"></div>
+  </div>
+  <div id="page-chat" class="page pb-24">
+    <div id="chat-list-view">
+      <div class="bg-gradient-to-b from-red-600 to-red-800 text-white px-4 pt-12 pb-6" style="border-radius: 0 0 24px 24px;"><h1 class="text-xl font-extrabold">💬 Mensagens</h1><p class="text-xs opacity-80 mt-1">Converse com lojas e suporte IA</p></div>
+      <div class="px-4 mt-4">
+        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Suporte IA</p>
+        <div class="chat-list-item" onclick="openAIChat()">
+          <div class="avatar">🤖</div>
+          <div class="info"><div class="name">Suporte Delivery app IA</div><div class="last-msg">Assistente inteligente 24/7</div></div>
+          <span class="badge">Online</span>
+        </div>
+        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mt-6 mb-2">Lojas</p>
+        <p class="text-sm text-gray-400 text-center py-6">Faça um pedido para iniciar uma conversa</p>
+      </div>
+    </div>
+    <div id="chat-ai-view" style="display: none;">
+      <div class="chat-header">
+        <button class="back-btn" onclick="closeAIChat()">←</button>
+        <div class="avatar">🤖</div>
+        <div class="info"><h3>Suporte Delivery app</h3><p><span class="status-dot"></span> Online agora</p></div>
+      </div>
+      <div id="chat-messages-area" class="chat-messages-area">
+        <div class="msg msg-bot"><span class="bot-name">🤖 Delivery app:</span> Olá! Como posso ajudar você hoje?</div>
+        <div class="quick-questions" id="quick-questions">
+          <button class="quick-btn" onclick="sendChatMsg('Como rastrear meu pedido?')">📦 Rastrear</button>
+          <button class="quick-btn" onclick="sendChatMsg('Como criar uma loja?')">🏪 Criar loja</button>
+          <button class="quick-btn" onclick="sendChatMsg('Como funciona a entrega segura?')">🛡️ Entrega</button>
+          <button class="quick-btn" onclick="sendChatMsg('Formas de pagamento')">💳 Pagamento</button>
+        </div>
+      </div>
+      <div class="chat-input-area">
+        <input id="chat-input" type="text" placeholder="Digite sua mensagem..." onkeypress="if(event.key==='Enter')sendChatFromInput()" aria-label="Mensagem" />
+        <button class="send-btn" onclick="sendChatFromInput()">➤</button>
+      </div>
+    </div>
+  </div>
+  <div id="page-perfil" class="page pb-24">
+    <div id="profile-view" style="display:none">
+      <div class="bg-gradient-to-b from-red-600 to-red-800 text-white px-4 pt-12 pb-6" style="border-radius: 0 0 24px 24px;">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-3"><div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center text-2xl">👤</div><div><h2 class="font-extrabold text-lg" id="profile-name">Usuário</h2><p class="text-xs opacity-80" id="profile-email"></p></div></div>
+          <button onclick="logout()" class="p-2 hover:bg-white/10 rounded-full transition-colors text-xl" aria-label="Sair">🚪</button>
+        </div>
+        <div class="profile-tabs-container">
+          <button onclick="setProfileTab('cliente')" id="tab-btn-cliente" class="profile-tab profile-tab-active"><span class="text-xl">🛒</span><span class="text-[11px] font-bold">Cliente</span></button>
+          <button onclick="setProfileTab('lojista')" id="tab-btn-lojista" class="profile-tab profile-tab-inactive"><span class="text-xl">🏪</span><span class="text-[11px] font-bold">Lojista</span></button>
+          <button onclick="setProfileTab('entregador')" id="tab-btn-entregador" class="profile-tab profile-tab-inactive"><span class="text-xl">🏍️</span><span class="text-[11px] font-bold">Entregador</span></button>
+          <button onclick="setProfileTab('admin')" id="tab-btn-admin" class="profile-tab profile-tab-inactive" style="display: none;"><span class="text-xl">🛡️</span><span class="text-[11px] font-bold">Admin</span></button>
+          <button onclick="setProfileTab('sobre')" id="tab-btn-sobre" class="profile-tab profile-tab-inactive"><span class="text-xl">💡</span><span class="text-[11px] font-bold">Sobre</span></button>
+        </div>
+      </div>
+      <div id="profile-tab-content" class="px-4 mt-4 space-y-4"></div>
+    </div>
+  </div>
+  <nav class="bottom-nav">
+    <div class="bottom-nav-inner">
+      <button onclick="navigate('home')" id="nav-home" class="nav-item text-red-600"><span class="text-xl">🏠</span><span class="text-[11px] font-medium">Lojas</span></button>
+      <button onclick="navigate('mapa')" id="nav-mapa" class="nav-item text-gray-400"><span class="text-xl">🗺️</span><span class="text-[11px] font-medium">Mapa</span></button>
+      <button onclick="navigate('chat')" id="nav-chat" class="nav-item text-gray-400"><span class="text-xl">💬</span><span class="text-[11px] font-medium">Chat</span></button>
+      <button onclick="navigate('perfil')" id="nav-perfil" class="nav-item text-gray-400"><span class="text-xl">👤</span><span class="text-[11px] font-medium">Perfil</span></button>
+    </div>
+  </nav>
+  <div id="location-badge" class="location-badge" style="display: none;" onclick="requestUserLocation()">
+    <span class="location-dot"></span><span id="location-status">Obtendo localização...</span>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  // ==================== SUPABASE ====================
+  const SUPABASE_URL = 'https://kvnlttikslwsthirpltj.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2bmx0dGlrc2x3c3RoaXJwbHRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxMTk0NTMsImV4cCI6MjA5NzY5NTQ1M30.rroy2ZJUUyF6FyJ7WBYBoD3YEwV1LCF5U3MDvuNEWJo';
+  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  // ==================== STATE ====================
+  let state = {
+    allStores: [],
+    allMotoboys: [],
+    allNotifs: [],
+    currentUser: null,
+    currentPage: 'home',
+    pageHistory: ['home'],
+    currentStoreId: null,
+    storeProducts: [],
+    activeCategory: 'todas',
+    profileTab: 'cliente',
+    mapFilter: 'tudo',
+    cart: { items: [], storeId: null, storeName: '', deliveryFee: 0 },
+    map: null,
+    userMarker: null,
+    userLocation: null,
+    watchPositionId: null,
+    notifInterval: null,
+    locationPermissionAsked: false,
+    notificationPermissionAsked: false,
+    deliveryMethod: 'com_codigo',
+    isLocationActive: false,
+    selectedStoreId: null,
+  };
+
+  function saveCart() { try { localStorage.setItem('deliveryapp_cart', JSON.stringify(state.cart)); } catch(e) {} }
+  function loadCart() {
+    try {
+      const data = localStorage.getItem('deliveryapp_cart');
+      if (data) { const parsed = JSON.parse(data); if (parsed && typeof parsed === 'object') state.cart = parsed; }
+    } catch(e) {}
+  }
+  function saveSession(user) { try { localStorage.setItem('deliveryapp_user', JSON.stringify(user)); } catch(e) {} }
+  function loadSession() { try { const data = localStorage.getItem('deliveryapp_user'); return data ? JSON.parse(data) : null; } catch(e) { return null; } }
+  function clearSession() { localStorage.removeItem('deliveryapp_user'); }
+
+  function showToast(msg, type = 'default') {
+    const c = document.getElementById('toast-container');
+    const t = document.createElement('div');
+    t.className = `toast ${type}`;
+    t.textContent = msg;
+    c.appendChild(t);
+    setTimeout(() => t.classList.add('show'), 10);
+    setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 3000);
+  }
+
+  function validateEmail(email) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email); }
+  function validatePhone(phone) { return /^\(?\d{2}\)?[\s-]?\d{4,5}-?\d{4}$/.test(phone); }
+  function validateCPF(cpf) { cpf = cpf.replace(/\D/g,''); if (cpf.length !== 11) return false; return true; }
+
+  // ==================== AUTENTICAÇÃO ====================
+  async function handleLogin() {
+    const email = document.getElementById('login-email').value.trim();
+    const password = document.getElementById('login-password').value;
+    if (!email || !password) { showToast('Preencha e-mail e senha', 'error'); return; }
+    if (!validateEmail(email)) { showToast('E-mail inválido', 'error'); return; }
+    const btn = document.getElementById('login-btn');
+    btn.disabled = true; btn.textContent = 'Entrando...';
+    try {
+      const { data, error } = await sb.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+      showToast('Bem-vindo!', 'success');
+    } catch (err) {
+      showToast(err.message || 'Erro ao entrar', 'error');
+    } finally {
+      btn.disabled = false; btn.textContent = 'Entrar';
+    }
+  }
+
+  async function handleRegister() {
+    const name = document.getElementById('register-name').value.trim();
+    const email = document.getElementById('register-email').value.trim();
+    const password = document.getElementById('register-password').value;
+    if (!name || !email || !password) { showToast('Preencha todos os campos', 'error'); return; }
+    if (!validateEmail(email)) { showToast('E-mail inválido', 'error'); return; }
+    if (password.length < 6) { showToast('Senha deve ter pelo menos 6 caracteres', 'error'); return; }
+    const btn = document.getElementById('register-btn');
+    btn.disabled = true; btn.textContent = 'Criando...';
+    try {
+      const { data, error } = await sb.auth.signUp({ email, password, options: { data: { full_name: name } } });
+      if (error) throw error;
+      showToast('Conta criada! Verifique seu e-mail.', 'success');
+      toggleAuthForms(true);
+    } catch (err) {
+      showToast(err.message || 'Erro ao criar conta', 'error');
+    } finally {
+      btn.disabled = false; btn.textContent = 'Criar conta';
+    }
+  }
+
+  async function handleSocialLogin(provider) {
+    try {
+      const { error } = await sb.auth.signInWithOAuth({ provider });
+      if (error) throw error;
+      showToast('Redirecionando para ' + provider + '...', 'default');
+    } catch (err) {
+      showToast('Erro ao fazer login com ' + provider + ': ' + err.message, 'error');
+    }
+  }
+
+  async function handlePhoneLogin() {
+    const phone = prompt('Digite seu número de telefone (com DDD):');
+    if (!phone) return;
+    try {
+      const { error } = await sb.auth.signInWithOtp({ phone });
+      if (error) throw error;
+      const code = prompt('Digite o código recebido por SMS:');
+      if (!code) return;
+      const { data, error: verifyError } = await sb.auth.verifyOtp({ phone, token: code, type: 'sms' });
+      if (verifyError) throw verifyError;
+      showToast('Login com telefone realizado!', 'success');
+    } catch (err) {
+      showToast(err.message || 'Erro no login por telefone', 'error');
+    }
+  }
+
+  async function resetPassword() {
+    const email = document.getElementById('login-email').value.trim();
+    if (!email) { showToast('Digite seu e-mail primeiro', 'error'); return; }
+    if (!validateEmail(email)) { showToast('E-mail inválido', 'error'); return; }
+    const btn = document.getElementById('forgot-password-btn');
+    btn.disabled = true; btn.textContent = 'Enviando...';
+    try {
+      const redirectUrl = 'https://huagnermarques-ops.github.io/DeliveryApp/reset.html';
+      const { error } = await sb.auth.resetPasswordForEmail(email, {
+        redirectTo: redirectUrl,
+      });
+      if (error) throw error;
+      showToast('E-mail de redefinição enviado! Verifique sua caixa de entrada.', 'success');
+    } catch (err) {
+      showToast('Erro ao enviar e-mail: ' + err.message, 'error');
+    } finally {
+      btn.disabled = false; btn.textContent = 'Esqueceu a senha?';
+    }
+  }
+
+  function toggleAuthForms(showLogin) {
+    document.getElementById('auth-login-form').style.display = showLogin ? 'block' : 'none';
+    document.getElementById('auth-register-form').style.display = showLogin ? 'none' : 'block';
+  }
+
+  function showApp() {
+    document.getElementById('auth-container').style.display = 'none';
+    document.getElementById('app-main').style.display = 'block';
+    initAppAfterLogin();
+  }
+
+  function logout() {
+    sb.auth.signOut();
+    clearSession();
+    state.currentUser = null;
+    document.getElementById('app-main').style.display = 'none';
+    document.getElementById('auth-container').style.display = 'flex';
+    showToast('Logout realizado', 'default');
+    if (state.watchPositionId) { navigator.geolocation.clearWatch(state.watchPositionId); state.watchPositionId = null; state.isLocationActive = false; }
+  }
+
+  sb.auth.onAuthStateChange((event, session) => {
+    if (event === 'SIGNED_IN' && session?.user) {
+      state.currentUser = {
+        id: session.user.id,
+        email: session.user.email,
+        full_name: session.user.user_metadata?.full_name || ''
+      };
+      saveSession(state.currentUser);
+      showApp();
+    } else if (event === 'SIGNED_OUT') {}
+  });
+
+  document.getElementById('login-btn').addEventListener('click', handleLogin);
+  document.getElementById('register-btn').addEventListener('click', handleRegister);
+  document.getElementById('show-register-btn').addEventListener('click', () => toggleAuthForms(false));
+  document.getElementById('show-login-btn').addEventListener('click', () => toggleAuthForms(true));
+  document.getElementById('google-btn').addEventListener('click', () => handleSocialLogin('google'));
+  document.getElementById('facebook-btn').addEventListener('click', () => handleSocialLogin('facebook'));
+  document.getElementById('phone-btn').addEventListener('click', handlePhoneLogin);
+
+  // ==================== NAVEGAÇÃO ====================
+  function navigate(page, extra) {
+    if (page !== state.currentPage) state.pageHistory.push(page);
+    state.currentPage = page;
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('page-' + page).classList.add('active');
+    ['home', 'mapa', 'chat', 'perfil'].forEach(p => {
+      const btn = document.getElementById('nav-' + p);
+      if (btn) btn.className = `nav-item ${p === page ? 'text-red-600' : 'text-gray-400'}`;
+    });
+    if (page === 'store' && extra) {
+      state.currentStoreId = extra;
+      loadStoreDetail(extra);
+    }
+    if (page === 'checkout') renderCheckout();
+    if (page === 'orders') loadOrders();
+    if (page === 'mapa') { initMap(); renderMapList(); }
+    if (page === 'perfil') { if (state.currentUser) showProfileView(); }
+    window.scrollTo(0, 0);
+  }
+
+  function goBack() {
+    if (state.pageHistory.length > 1) {
+      state.pageHistory.pop();
+      const prev = state.pageHistory[state.pageHistory.length - 1];
+      navigate(prev);
+    } else {
+      navigate('home');
+    }
+  }
+
+  // ==================== CARRINHO ====================
+  function addToCart(product, store) {
+    if (state.cart.storeId && state.cart.storeId !== store.id) {
+      if (!confirm('Seu carrinho tem itens de outra loja. Deseja limpar e adicionar este?')) return;
+      state.cart = { items: [], storeId: store.id, storeName: store.name, deliveryFee: store.delivery_fee || 0 };
+    }
+    if (!state.cart.storeId) {
+      state.cart.storeId = store.id;
+      state.cart.storeName = store.name;
+      state.cart.deliveryFee = store.delivery_fee || 0;
+    }
+    const ex = state.cart.items.find(i => i.product_id === product.id);
+    if (ex) ex.quantity++;
+    else state.cart.items.push({ product_id: product.id, name: product.name, price: product.price, quantity: 1, emoji: product.emoji || '📦' });
+    saveCart();
+    renderCartBars();
+    renderStoreDetail();
+    showToast(`${product.name} adicionado!`, 'success');
+  }
+
+  function removeFromCart(pid) {
+    const ex = state.cart.items.find(i => i.product_id === pid);
+    if (ex) { ex.quantity--; if (ex.quantity <= 0) state.cart.items = state.cart.items.filter(i => i.product_id !== pid); }
+    if (state.cart.items.length === 0) { state.cart = { items: [], storeId: null, storeName: '', deliveryFee: 0 }; }
+    saveCart();
+    renderCartBars();
+    renderStoreDetail();
+  }
+
+  function clearCart() {
+    state.cart = { items: [], storeId: null, storeName: '', deliveryFee: 0 };
+    saveCart();
+    renderCartBars();
+  }
+
+  function getCartTotal() { return state.cart.items.reduce((s, i) => s + i.price * i.quantity, 0); }
+  function getCartCount() { return state.cart.items.reduce((s, i) => s + i.quantity, 0); }
+  function getItemQty(pid) { return (state.cart.items.find(i => i.product_id === pid) || {}).quantity || 0; }
+
+  function cartBarHTML() {
+    if (getCartCount() === 0) return '';
+    const total = getCartTotal().toFixed(2).replace('.', ',');
+    return `<div class="cart-bar"><button onclick="navigate('checkout')" class="w-full bg-red-600 text-white px-5 py-3.5 flex items-center justify-between shadow-xl rounded-2xl"><div class="flex items-center gap-2"><div class="w-7 h-7 bg-white/20 rounded-lg flex items-center justify-center">🛍️</div><span class="text-sm font-bold">${getCartCount()}</span></div><span class="font-bold text-sm">Ver carrinho</span><span class="font-extrabold text-sm">R$ ${total}</span></button></div>`;
+  }
+
+  function renderCartBars() {
+    ['cart-bar-home', 'cart-bar-store'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.innerHTML = cartBarHTML();
+    });
+  }
+
+  // ==================== NOTIFICAÇÕES ====================
+  async function loadNotifications() {
+    if (!state.currentUser?.id) return;
+    try {
+      const { data, error } = await sb.from('notifications').select('*').eq('user_id', state.currentUser.id).order('created_at', { ascending: false }).limit(30);
+      if (error) throw error;
+      state.allNotifs = data || [];
+      renderNotifBadge();
+      renderNotifPanel();
+    } catch (e) { console.warn('Erro ao carregar notificações:', e); }
+  }
+
+  function renderNotifBadge() {
+    const unread = state.allNotifs.filter(n => !n.is_read).length;
+    const badge = document.getElementById('notif-badge');
+    if (unread > 0) { badge.style.display = 'flex'; badge.textContent = unread > 9 ? '9+' : unread; }
+    else badge.style.display = 'none';
+    const btn = document.getElementById('mark-all-btn');
+    if (btn) btn.style.display = unread > 0 ? 'inline' : 'none';
+  }
+
+  function renderNotifPanel() {
+    const list = document.getElementById('notif-list');
+    if (!list) return;
+    if (state.allNotifs.length === 0) {
+      list.innerHTML = '<div class="py-10 text-center text-gray-400"><div class="text-3xl mb-2">🔔</div><p class="text-sm">Nenhuma notificação</p></div>';
+      return;
+    }
+    const icons = { pedido: '🛍️', entrega: '🚴', promo: '🏷️', sistema: 'ℹ️' };
+    const bgs = { pedido: 'bg-blue-100', entrega: 'bg-green-100', promo: 'bg-yellow-100', sistema: 'bg-gray-100' };
+    list.innerHTML = state.allNotifs.map(n => `<div onclick="markNotifRead('${n.id}')" class="flex gap-3 px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors ${!n.is_read ? 'bg-blue-50' : ''}"><div class="w-8 h-8 rounded-full ${bgs[n.type] || 'bg-gray-100'} flex items-center justify-center flex-shrink-0 text-base">${icons[n.type] || 'ℹ️'}</div><div class="flex-1 min-w-0"><div class="flex items-center justify-between gap-2"><p class="text-xs font-bold truncate text-gray-900">${n.title}</p>${!n.is_read ? '<span class="w-2 h-2 bg-red-600 rounded-full flex-shrink-0 animate-pulse"></span>' : ''}</div><p class="text-xs text-gray-400 mt-0.5 line-clamp-2">${n.message}</p><p class="text-[10px] text-gray-300 mt-1">${n.created_at ? new Date(n.created_at).toLocaleString('pt-BR') : ''}</p></div></div>`).join('');
+  }
+
+  function toggleNotifPanel() {
+    const p = document.getElementById('notif-panel');
+    p.style.display = p.style.display === 'none' ? 'block' : 'none';
+  }
+
+  async function markNotifRead(id) {
+    const n = state.allNotifs.find(x => x.id === id);
+    if (!n || n.is_read) return;
+    n.is_read = true;
+    try { await sb.from('notifications').update({ is_read: true }).eq('id', id); } catch(e) {}
+    renderNotifBadge();
+    renderNotifPanel();
+  }
+
+  async function markAllRead() {
+    const unread = state.allNotifs.filter(n => !n.is_read);
+    unread.forEach(n => n.is_read = true);
+    await Promise.all(unread.map(n => sb.from('notifications').update({ is_read: true }).eq('id', n.id)));
+    renderNotifBadge();
+    renderNotifPanel();
+  }
+
+  async function addInAppNotification(title, message, type = 'sistema') {
+    if (!state.currentUser?.id) return;
+    try {
+      await sb.from('notifications').insert({ user_id: state.currentUser.id, title, message, type, is_read: false, created_at: new Date().toISOString() });
+      loadNotifications();
+      showToast(message, 'default');
+    } catch(e) {}
+  }
+
+  async function requestNotificationPermission() {
+    if (!('Notification' in window)) { showToast('Notificações não suportadas', 'error'); return false; }
+    if (Notification.permission === 'granted') { showToast('Notificações ativadas!', 'success'); return true; }
+    if (Notification.permission !== 'denied') {
+      const permission = await Notification.requestPermission();
+      if (permission === 'granted') { showToast('Notificações ativadas!', 'success'); return true; }
+      else { showToast('Notificações desativadas', 'default'); return false; }
+    }
+    return false;
+  }
+
+  // ==================== LOCALIZAÇÃO ====================
+  function showLocationModal() {
+    if (state.locationPermissionAsked) return;
+    state.locationPermissionAsked = true;
+    document.getElementById('location-modal').style.display = 'flex';
+  }
+  function allowLocation() {
+    document.getElementById('location-modal').style.display = 'none';
+    startLocationTracking();
+  }
+  function denyLocation() {
+    document.getElementById('location-modal').style.display = 'none';
+    showToast('Localização desativada', 'default');
+  }
+  function showNotificationModal() {
+    if (state.notificationPermissionAsked) return;
+    state.notificationPermissionAsked = true;
+    document.getElementById('notif-modal').style.display = 'flex';
+  }
+  async function allowNotification() {
+    document.getElementById('notif-modal').style.display = 'none';
+    await requestNotificationPermission();
+  }
+  function denyNotification() {
+    document.getElementById('notif-modal').style.display = 'none';
+    showToast('Notificações desativadas', 'default');
+  }
+
+  function startLocationTracking() {
+    if (!navigator.geolocation) { showToast('Geolocalização não suportada', 'error'); return; }
+    state.isLocationActive = true;
+    const badge = document.getElementById('location-badge');
+    const statusSpan = document.getElementById('location-status');
+    badge.style.display = 'flex';
+    statusSpan.textContent = 'Ativando GPS...';
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        state.userLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        statusSpan.textContent = 'Localização ativa ✓';
+        showToast('Localização ativada!', 'location');
+        if (state.map) {
+          state.map.setView([state.userLocation.lat, state.userLocation.lng], 14);
+          if (state.userMarker) state.map.removeLayer(state.userMarker);
+          state.userMarker = L.marker([state.userLocation.lat, state.userLocation.lng], {
+            icon: L.divIcon({ html: '<div style="background: #dc2626; width: 20px; height: 20px; border-radius: 50%; border: 3px solid white; box-shadow: 0 0 0 2px #dc2626; animation: pulse 1.5s infinite;"></div>', iconSize: [20,20] })
+          }).addTo(state.map).bindPopup('📍 Você está aqui').openPopup();
+        }
+        if (state.currentUser?.id) {
+          sb.from('user_locations').upsert({ user_id: state.currentUser.id, lat: state.userLocation.lat, lng: state.userLocation.lng, updated_at: new Date().toISOString() }).catch(()=>{});
+        }
+      },
+      err => {
+        statusSpan.textContent = 'Localização desativada';
+        showToast('Não foi possível obter sua localização. Ative as permissões.', 'error');
+        state.isLocationActive = false;
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+    if (state.watchPositionId) navigator.geolocation.clearWatch(state.watchPositionId);
+    state.watchPositionId = navigator.geolocation.watchPosition(
+      pos => {
+        state.userLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        if (state.map && state.userMarker) state.userMarker.setLatLng([state.userLocation.lat, state.userLocation.lng]);
+        if (state.currentUser?.id) {
+          sb.from('user_locations').upsert({ user_id: state.currentUser.id, lat: state.userLocation.lat, lng: state.userLocation.lng, updated_at: new Date().toISOString() }).catch(()=>{});
+        }
+      },
+      null,
+      { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
+    );
+  }
+
+  function requestUserLocation() {
+    if (state.userLocation && state.map) {
+      state.map.setView([state.userLocation.lat, state.userLocation.lng], 15);
+    } else {
+      startLocationTracking();
+    }
+  }
+
+  // ==================== HOME ====================
+  const CATEGORIES = [
+    { key:'todas', label:'Todas', emoji:'🏪' },
+    { key:'restaurante', label:'Restaurante', emoji:'🍔' },
+    { key:'mercado', label:'Mercado', emoji:'🛒' },
+    { key:'farmacia', label:'Farmácia', emoji:'💊' },
+    { key:'acai', label:'Açaí', emoji:'🍇' },
+    { key:'padaria', label:'Padaria', emoji:'🍞' },
+    { key:'pet', label:'Pet', emoji:'🐾' }
+  ];
+
+  function renderCategoryFilter() {
+    document.getElementById('category-filter').innerHTML = CATEGORIES.map(c =>
+      `<button onclick="setCategory('${c.key}')" class="flex flex-col items-center gap-1 min-w-[70px] px-3 py-2 transition-all ${state.activeCategory === c.key ? 'category-btn-active' : 'category-btn'}"><span class="text-xl">${c.emoji}</span><span class="text-[10px] font-semibold whitespace-nowrap">${c.label}</span></button>`
+    ).join('');
+  }
+
+  function setCategory(key) {
+    state.activeCategory = key;
+    renderCategoryFilter();
+    renderStoreGrid();
+  }
+
+  function renderStoreGrid() {
+    const q = document.getElementById('search-input')?.value.toLowerCase() || '';
+    const filtered = state.allStores.filter(s => {
+      const catOk = state.activeCategory === 'todas' || s.category === state.activeCategory;
+      const qOk = !q || s.name.toLowerCase().includes(q) || (s.description && s.description.toLowerCase().includes(q));
+      return catOk && qOk;
+    });
+    document.getElementById('store-count').innerText = filtered.length + ' encontradas';
+    const grid = document.getElementById('store-grid');
+    if (filtered.length === 0) {
+      grid.innerHTML = `<div class="empty-state-full"><div class="empty-emoji">🏪</div><div class="empty-title">Nenhuma loja encontrada</div><div class="empty-subtitle">Seja o primeiro! Cadastre sua loja no perfil</div><button onclick="navigate('perfil')" class="empty-button">📝 Cadastrar Loja</button></div>`;
+      grid.classList.remove('store-grid-container');
+      return;
+    }
+    grid.innerHTML = filtered.map(s => `
+      <button onclick="navigate('store','${s.id}')" class="store-card text-left">
+        <div class="h-28 bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center relative">
+          ${s.is_featured ? '<span class="absolute top-2 left-2 bg-red-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full animate-pulse">🔥 TOP</span>' : ''}
+          <span class="text-5xl">${s.emoji || '🏪'}</span>
+        </div>
+        <div class="p-3">
+          <h3 class="font-bold text-sm truncate">${s.name}</h3>
+          <p class="text-xs text-gray-400 truncate">${s.description || s.category}</p>
+          <div class="flex items-center justify-between mt-2">
+            <span class="text-xs font-semibold bg-yellow-100 px-2 py-0.5 rounded-full">⭐ ${s.rating || 'Novo'}</span>
+            <span class="text-xs text-red-600 font-semibold">🚴 ${(s.delivery_fee || 0) === 0 ? 'Grátis' : 'R$' + (s.delivery_fee || 0).toFixed(2).replace('.', ',')}</span>
+          </div>
+        </div>
+      </button>
+    `).join('');
+    grid.classList.add('store-grid-container');
+  }
+
+  function renderFeaturedBanner() {
+    const featured = state.allStores.find(s => s.is_featured);
+    const el = document.getElementById('featured-banner');
+    if (!el) return;
+    if (!featured) { el.innerHTML = ''; return; }
+    el.innerHTML = `<div class="featured-banner" onclick="navigate('store','${featured.id}')"><div class="banner-emoji">${featured.emoji || '🏪'}</div><div class="banner-tag">⚡ EM DESTAQUE</div><div class="banner-title">${featured.name}</div><div class="banner-desc">${featured.description || 'Confira os melhores produtos!'}</div><div class="banner-button">PEDIR AGORA →</div></div>`;
+  }
+
+  // ==================== MAPA ====================
+  function initMap() {
+    if (state.map) { state.map.invalidateSize(); return; }
+    const center = state.userLocation ? [state.userLocation.lat, state.userLocation.lng] : [-23.5505, -46.6333];
+    state.map = L.map('map').setView(center, 13);
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+      attribution: '© OpenStreetMap',
+      subdomains: 'abcd',
+      maxZoom: 19
+    }).addTo(state.map);
+    if (state.userLocation) {
+      state.userMarker = L.marker([state.userLocation.lat, state.userLocation.lng], {
+        icon: L.divIcon({ html: '<div style="background:#dc2626;width:20px;height:20px;border-radius:50%;border:3px solid white;"></div>', iconSize: [20,20] })
+      }).addTo(state.map).bindPopup('Você');
+    }
+    state.allStores.forEach(store => {
+      if (store.latitude && store.longitude) {
+        const marker = L.marker([store.latitude, store.longitude], {
+          icon: L.divIcon({ html: `<div style="background:#dc2626;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;border:2px solid white;">${store.emoji || '🏪'}</div>`, iconSize: [36,36] })
+        }).addTo(state.map);
+        marker.bindPopup(`<div><strong>${store.name}</strong><br><button onclick="navigate('store','${store.id}')" style="background:#dc2626;color:white;padding:6px 12px;border-radius:30px;">Ver loja</button></div>`);
+      }
+    });
+    state.allMotoboys.forEach(m => {
+      if (m.latitude && m.longitude) {
+        L.marker([m.latitude, m.longitude], {
+          icon: L.divIcon({ html: '<div style="background:#3b82f6;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;">🏍️</div>', iconSize: [28,28] })
+        }).addTo(state.map).bindPopup(`🏍️ ${m.full_name} - Disponível`);
+      }
+    });
+  }
+
+  function setMapFilter(f) {
+    state.mapFilter = f;
+    document.querySelectorAll('.map-filter-btn').forEach(btn => {
+      const active = btn.dataset.filter === f;
+      btn.className = `map-filter-btn ${active ? 'map-filter-btn-active' : 'map-filter-btn-inactive'}`;
+    });
+    renderMapList();
+  }
+
+  function renderMapList() {
+    const q = document.getElementById('map-search')?.value.toLowerCase() || '';
+    const fStores = state.allStores.filter(s => state.mapFilter !== 'entregadores' && (!q || s.name.toLowerCase().includes(q)));
+    const fMoto = state.allMotoboys.filter(m => state.mapFilter !== 'lojas' && (!q || m.full_name.toLowerCase().includes(q)));
+    let html = '';
+    if (fStores.length) {
+      html += `<div class="flex justify-between items-center mb-2"><h2 class="font-bold text-sm">🏪 Lojas</h2><span class="text-xs text-gray-400">${fStores.length}</span></div><div class="mb-4 space-y-2">${fStores.map(s => `<button onclick="navigate('store','${s.id}')" class="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 w-full text-left bg-white shadow-sm rounded-2xl"><div class="w-12 h-12 bg-gradient-to-br from-gray-100 to-gray-50 rounded-full flex items-center justify-center text-2xl">${s.emoji || '🏪'}</div><div class="flex-1"><p class="font-semibold text-sm">${s.name}</p><p class="text-xs text-gray-400">${s.category}</p></div><span class="px-2 py-0.5 text-[10px] font-semibold rounded-full ${s.is_open ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}">${s.is_open ? 'Aberta' : 'Fechada'}</span></button>`).join('')}</div>`;
+    }
+    if (fMoto.length) {
+      html += `<div class="flex justify-between items-center mb-2"><h2 class="font-bold text-sm">🏍️ Motoboys</h2><span class="text-xs text-gray-400">${fMoto.length}</span></div><div class="space-y-2">${fMoto.map(m => `<div class="flex items-center gap-3 px-4 py-3 bg-white shadow-sm rounded-2xl"><div class="w-10 h-10 bg-gradient-to-br from-green-100 to-green-50 rounded-full flex items-center justify-center text-lg">🏍️</div><div class="flex-1"><p class="font-semibold text-sm">${m.full_name}</p><p class="text-xs text-gray-400">${m.modelo_moto || ''} · ${m.placa || ''}</p></div><span class="text-[10px] font-bold bg-green-100 text-green-700 px-2 py-0.5 rounded-full animate-pulse">● Disponível</span></div>`).join('')}</div>`;
+    }
+    document.getElementById('map-list').innerHTML = html || '<div class="text-center text-gray-400 py-6">Nada encontrado</div>';
+  }
+
+  // ==================== STORE DETAIL ====================
+  async function loadStoreDetail(id) {
+    document.getElementById('store-detail-content').innerHTML = '<div class="flex justify-center items-center h-64 bg-gray-50"><div class="w-6 h-6 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div></div>';
+    try {
+      const { data: s, error: sErr } = await sb.from('stores').select('*').eq('id', id).maybeSingle();
+      if (sErr || !s) { showToast('Loja não encontrada', 'error'); navigate('home'); return; }
+      const { data: p, error: pErr } = await sb.from('products').select('*').eq('store_id', id).eq('is_available', true);
+      if (pErr) throw pErr;
+      state.currentStoreId = id;
+      state.storeProducts = p || [];
+      renderStoreDetail(s);
+    } catch (err) {
+      showToast('Erro ao carregar loja', 'error');
+      navigate('home');
+    }
+  }
+
+  function renderStoreDetail(store) {
+    const s = store || state.allStores.find(x => x.id === state.currentStoreId);
+    if (!s) { document.getElementById('store-detail-content').innerHTML = '<div class="p-8 text-center bg-gray-50"><p class="text-gray-400">Loja não encontrada</p><button onclick="navigate(\'home\')" class="text-red-600 text-sm mt-2 px-4 py-2 rounded-full">Voltar</button></div>'; return; }
+    const productsHtml = state.storeProducts.length === 0
+      ? '<div class="bg-white rounded-2xl p-8 text-center"><p class="text-gray-400 text-sm">Nenhum produto cadastrado</p></div>'
+      : state.storeProducts.map(p => {
+          const qty = getItemQty(p.id);
+          return `<div class="product-item"><div class="product-icon-frame">🛍️</div><div class="product-info"><div class="product-name">${p.name}</div>${p.description ? `<div class="product-desc">${p.description}</div>` : ''}<div class="product-price">R$ ${(p.price || 0).toFixed(2).replace('.', ',')}</div><div class="product-stock">Estoque: ${p.stock || 0}</div><div id="prod-ctrl-${p.id}">${qty > 0 ? `<div class="quantity-control"><div class="qty-btn" onclick="removeProd('${p.id}')">−</div><span class="qty-value">${qty}</span><div class="qty-btn" onclick="addProd('${p.id}')">+</div><span class="qty-total">R$ ${(p.price * qty).toFixed(2).replace('.', ',')}</span></div>` : `<div class="add-button" onclick="addProd('${p.id}')">+ Adicionar</div>`}</div></div></div>`;
+        }).join('');
+    const statusBadge = s.is_open ? '<span class="header-badge header-badge-green">✅ Aberta</span>' : '<span class="header-badge header-badge-gray">🔴 Fechada</span>';
+    const deliveryText = (s.delivery_fee || 0) === 0 ? 'Grátis' : `R$ ${(s.delivery_fee || 0).toFixed(2).replace('.', ',')}`;
+    document.getElementById('store-detail-content').innerHTML = `
+      <div class="store-header-red">
+        <button onclick="goBack()" class="back-button">← Voltar</button>
+        <div><h1 class="text-xl font-extrabold">${s.name}</h1><p class="text-xs opacity-80 mt-0.5">${s.category}</p><p class="text-xs opacity-70">${s.description || ''}</p></div>
+        <div class="flex flex-wrap items-center gap-2 mt-4">${statusBadge}<span class="header-badge">🚴 ${deliveryText}</span><span class="header-badge">📍 ${s.delivery_radius || '3km'}</span><span class="header-badge">💳 Paga na entrega</span></div>
+      </div>
+      <div class="menu-header-simple"><span class="menu-title">Produtos (${state.storeProducts.length})</span><span class="menu-badge">Avaliações (0)</span></div>
+      <div class="products-container">${productsHtml}</div>
+    `;
+  }
+
+  function addProd(pid) {
+    const p = state.storeProducts.find(x => x.id === pid);
+    if (!p) return;
+    const store = state.allStores.find(x => x.id === state.currentStoreId);
+    if (store) addToCart(p, store);
+    renderStoreDetail();
+  }
+
+  function removeProd(pid) {
+    removeFromCart(pid);
+    renderStoreDetail();
+  }
+
+  // ==================== CHECKOUT ====================
+  function renderCheckout() {
+    const btn = document.getElementById('confirm-btn');
+    if (state.cart.items.length === 0) {
+      document.getElementById('checkout-content').innerHTML = '<div class="p-8 text-center bg-white rounded-2xl"><p class="text-gray-400">Carrinho vazio</p><button onclick="navigate(\'home\')" class="text-red-600 text-sm mt-2">Voltar</button></div>';
+      btn.style.display = 'none';
+      return;
+    }
+    btn.style.display = 'block';
+    const subtotal = getCartTotal(), total = subtotal + (state.cart.deliveryFee || 0);
+    document.getElementById('checkout-content').innerHTML = `
+      <div class="bg-white rounded-2xl p-4 space-y-3">
+        <div class="pb-2 border-b border-gray-100"><p class="font-bold">${state.cart.storeName}</p></div>
+        ${state.cart.items.map(item => `<div class="flex items-center justify-between py-2"><div class="flex-1"><p class="font-semibold text-sm">${item.name}</p><div class="flex items-center gap-2 mt-1"><button onclick="updateCartItem('${item.product_id}', -1);renderCheckout()" class="w-6 h-6 flex items-center justify-center font-bold bg-gray-100 rounded-full hover:bg-gray-200 transition-colors">−</button><span class="text-sm font-bold">${item.quantity}</span><button onclick="updateCartItem('${item.product_id}', 1);renderCheckout()" class="w-6 h-6 bg-red-600 text-white flex items-center justify-center font-bold rounded-full">+</button></div></div><p class="font-bold text-sm text-red-600">R$ ${(item.price * item.quantity).toFixed(2).replace('.', ',')}</p></div>`).join('')}
+        <div class="pt-3 space-y-1 bg-gray-50 p-4 rounded-2xl">
+          <div class="flex justify-between text-sm"><span>Subtotal</span><span>R$ ${subtotal.toFixed(2).replace('.', ',')}</span></div>
+          <div class="flex justify-between text-sm"><span>Entrega</span><span>${(state.cart.deliveryFee || 0) === 0 ? 'Grátis' : 'R$ ' + (state.cart.deliveryFee || 0).toFixed(2).replace('.', ',')}</span></div>
+          <div class="flex justify-between font-bold text-base pt-1"><span>Total</span><span class="text-red-600">R$ ${total.toFixed(2).replace('.', ',')}</span></div>
+        </div>
+      </div>
+      <p class="text-xs text-gray-400">💳 Pagamento na entrega</p>
+      <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-2xl">
+        <p class="font-bold text-sm mb-3">🛡️ Entrega Segura</p>
+        <div class="grid grid-cols-2 gap-2">
+          ${[['com_codigo', '🔑 Com código'], ['com_foto', '📸 Com foto'], ['na_porta', '🚪 Na porta'], ['sem_contato', '📦 Sem contato']].map(([v, l]) => `<label class="flex items-center gap-2 cursor-pointer p-2 hover:bg-white/50 transition-colors rounded-xl"><input type="radio" name="dmethod" value="${v}" ${v === state.deliveryMethod ? 'checked' : ''} onchange="state.deliveryMethod='${v}'" class="accent-red-600 w-4 h-4" /><span class="text-xs">${l}</span></label>`).join('')}
+        </div>
+      </div>
+      <div class="space-y-1 mt-4">
+        <p class="text-sm font-semibold">Endereço de entrega *</p>
+        <input id="checkout-address" type="text" placeholder="Rua, número, bairro..." class="w-full h-10 px-3 text-sm outline-none rounded-2xl" style="background:#f5f5f5 !important" aria-label="Endereço de entrega" />
+      </div>
+      <div class="space-y-1">
+        <p class="text-sm font-semibold">Observações</p>
+        <textarea id="checkout-obs" placeholder="Sem cebola, portão azul..." class="w-full h-20 px-3 py-2 text-sm resize-none outline-none rounded-2xl" style="background:#f5f5f5 !important" aria-label="Observações"></textarea>
+      </div>
+    `;
+    btn.textContent = `Confirmar · R$ ${total.toFixed(2).replace('.', ',')}`;
+  }
+
+  function updateCartItem(pid, delta) {
+    const item = state.cart.items.find(i => i.product_id === pid);
+    if (item) { item.quantity += delta; if (item.quantity <= 0) state.cart.items = state.cart.items.filter(i => i.product_id !== pid); }
+    if (state.cart.items.length === 0) { state.cart = { items: [], storeId: null, storeName: '', deliveryFee: 0 }; }
+    saveCart();
+    renderCartBars();
+  }
+
+  async function confirmOrder() {
+    if (!state.currentUser?.id) { showToast('Faça login para continuar', 'error'); return; }
+    const address = document.getElementById('checkout-address')?.value.trim();
+    if (!address) { showToast('Endereço obrigatório', 'error'); return; }
+    const btn = document.getElementById('confirm-btn');
+    btn.disabled = true; btn.textContent = 'Enviando...';
+    const observations = document.getElementById('checkout-obs')?.value.trim() || '';
+    const code = Math.random().toString(36).substring(2, 8).toUpperCase() + Date.now().toString(36).slice(-3);
+    const subtotal = getCartTotal(), total = subtotal + (state.cart.deliveryFee || 0);
+    try {
+      const { data: order, error } = await sb.from('orders').insert({
+        customer_id: state.currentUser.id,
+        store_id: state.cart.storeId,
+        store_name: state.cart.storeName,
+        subtotal,
+        delivery_fee: state.cart.deliveryFee,
+        total,
+        delivery_method: state.deliveryMethod,
+        delivery_address: address,
+        observations,
+        status: 'pendente',
+        confirmation_code: code
+      }).select().maybeSingle();
+      if (error) throw error;
+      if (order) {
+        await sb.from('order_items').insert(state.cart.items.map(i => ({
+          order_id: order.id,
+          product_id: i.product_id,
+          name: i.name,
+          price: i.price,
+          quantity: i.quantity,
+          emoji: i.emoji
+        })));
+        await addInAppNotification('✅ Pedido confirmado!', `Seu pedido em ${state.cart.storeName} foi recebido. Código: ${code}`, 'pedido');
+        showToast('Pedido confirmado! Código: ' + code, 'success');
+        clearCart();
+        navigate('home');
+        loadNotifications();
+      }
+    } catch (err) {
+      showToast('Erro ao confirmar pedido: ' + err.message, 'error');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = `Confirmar · R$ ${total.toFixed(2).replace('.', ',')}`;
+    }
+  }
+
+  // ==================== ORDERS ====================
+  async function loadOrders() {
+    if (!state.currentUser?.id) {
+      document.getElementById('orders-list').innerHTML = '<div class="text-center py-12 text-gray-400">Faça login</div>';
+      return;
+    }
+    try {
+      const { data: orders, error } = await sb.from('orders').select('*, order_items(name, quantity)').eq('customer_id', state.currentUser.id).order('created_at', { ascending: false });
+      if (error) throw error;
+      if (!orders || orders.length === 0) {
+        document.getElementById('orders-list').innerHTML = '<div class="text-center py-12 text-gray-400">Nenhum pedido</div>';
+        return;
+      }
+      document.getElementById('orders-list').innerHTML = orders.map(o => `
+        <div class="bg-white shadow-sm rounded-2xl p-4">
+          <div class="flex justify-between mb-2"><p class="font-bold text-sm">${o.store_name}</p><span class="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-yellow-100 text-yellow-800">${o.status}</span></div>
+          <div class="text-xs text-gray-400">${(o.order_items || []).map(i => i.quantity + 'x ' + i.name).join(', ')}</div>
+          <div class="flex justify-between mt-2"><span class="text-[10px] text-gray-300">${new Date(o.created_at).toLocaleString()}</span><span class="font-bold text-sm text-red-600">R$ ${(o.total || 0).toFixed(2).replace('.', ',')}</span></div>
+          ${o.confirmation_code ? '<p class="text-[10px] text-gray-400 mt-1">Código: ' + o.confirmation_code + '</p>' : ''}
+        </div>
+      `).join('');
+    } catch (err) {
+      showToast('Erro ao carregar pedidos', 'error');
+    }
+  }
+
+  // ==================== PERFIL ====================
+  function renderProfileHeader() {
+    document.getElementById('profile-name').textContent = state.currentUser?.full_name || 'Usuário';
+    document.getElementById('profile-email').textContent = state.currentUser?.email || '';
+    const adminBtn = document.getElementById('tab-btn-admin');
+    if (state.currentUser?.email === 'huagnermarques@gmail.com') {
+      adminBtn.style.display = 'flex';
+    } else {
+      adminBtn.style.display = 'none';
+      if (state.profileTab === 'admin') setProfileTab('cliente');
+    }
+  }
+
+  function setProfileTab(tab) {
+    state.profileTab = tab;
+    state.selectedStoreId = null;
+    const clienteBtn = document.getElementById('tab-btn-cliente');
+    const lojistaBtn = document.getElementById('tab-btn-lojista');
+    const entregadorBtn = document.getElementById('tab-btn-entregador');
+    const adminBtn = document.getElementById('tab-btn-admin');
+    const sobreBtn = document.getElementById('tab-btn-sobre');
+    [clienteBtn, lojistaBtn, entregadorBtn, adminBtn, sobreBtn].forEach(btn => {
+      if (btn) btn.className = 'profile-tab profile-tab-inactive';
+    });
+    if (tab === 'cliente') clienteBtn.className = 'profile-tab profile-tab-active';
+    else if (tab === 'lojista') lojistaBtn.className = 'profile-tab profile-tab-active';
+    else if (tab === 'entregador') entregadorBtn.className = 'profile-tab profile-tab-active';
+    else if (tab === 'admin') adminBtn.className = 'profile-tab profile-tab-active';
+    else if (tab === 'sobre') sobreBtn.className = 'profile-tab profile-tab-active';
+    renderProfileTab();
+    if (tab === 'lojista') loadMyStores();
+    if (tab === 'admin') renderAdminContent();
+    if (tab === 'sobre') renderSobreContent();
+  }
+
+  const CATEGORY_EMOJIS = { restaurante: '🍔', mercado: '🛒', farmacia: '💊', acai: '🍇', padaria: '🍞', pet: '🐾', outros: '📦' };
+
+  function renderProfileTab() {
+    const el = document.getElementById('profile-tab-content');
+    if (state.profileTab === 'cliente') {
+      el.innerHTML = `
+        <div class="bg-white shadow-sm rounded-2xl p-4"><h3 class="font-bold text-sm">🧑 Perfil Cliente</h3><p class="text-xs text-gray-400 mt-1">Explore lojas e faça pedidos com entrega segura.</p></div>
+        <div class="bg-white shadow-sm rounded-2xl p-4"><p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3">SEUS DADOS</p><div class="space-y-2"><div class="flex justify-between text-sm"><span class="text-gray-400">Nome</span><span class="font-semibold">${state.currentUser?.full_name || '—'}</span></div><div class="flex justify-between text-sm"><span class="text-gray-400">E-mail</span><span class="font-semibold text-xs truncate max-w-[180px]">${state.currentUser?.email || '—'}</span></div></div></div>
+        <button onclick="navigate('orders')" class="flex items-center gap-3 bg-white shadow-sm rounded-2xl p-4 hover:bg-gray-50 w-full text-left"><div class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">📋</div><div><p class="font-bold text-sm">Meus Pedidos</p><p class="text-xs text-gray-400">Ver histórico</p></div></button>
+        <div class="bg-gradient-to-r from-yellow-50 to-orange-50 rounded-2xl p-4"><p class="text-xs text-yellow-800">🛡️ Entregas com código de confirmação.</p></div>
+      `;
+    } else if (state.profileTab === 'lojista') {
+      if (state.selectedStoreId) {
+        renderLojistaProductPanel(el);
+      } else {
+        renderLojistaStoreList(el);
+      }
+    } else if (state.profileTab === 'entregador') {
+      el.innerHTML = `
+        <div class="bg-white shadow-sm rounded-2xl p-4"><h3 class="font-bold text-sm">🏍️ Perfil Entregador</h3><p class="text-xs text-gray-400 mt-1">Cadastre-se para fazer entregas.</p></div>
+        <div class="bg-gradient-to-r from-red-50 to-pink-50 rounded-2xl p-3 flex items-start gap-2"><span>🛡️</span><p class="text-xs text-red-600/80">Verificação de identidade obrigatória.</p></div>
+        <div class="bg-white shadow-sm rounded-2xl p-4 space-y-4">
+          <div><label class="text-sm font-medium">Nome completo *</label><input type="text" value="${state.currentUser?.full_name || ''}" readonly class="w-full h-10 px-3 text-sm mt-1 bg-gray-50 rounded-2xl" style="background:#f5f5f5 !important" /></div>
+          <div><label class="text-sm font-medium">Telefone</label><input id="moto-phone" type="tel" placeholder="(00) 00000-0000" class="w-full h-10 px-3 text-sm mt-1 outline-none rounded-2xl" style="background:#f5f5f5 !important" aria-label="Telefone" /></div>
+          <div><label class="text-sm font-medium">CPF</label><input id="moto-cpf" type="text" placeholder="000.000.000-00" class="w-full h-10 px-3 text-sm mt-1 outline-none rounded-2xl" style="background:#f5f5f5 !important" aria-label="CPF" /></div>
+          <div class="grid grid-cols-2 gap-3"><div><label class="text-sm font-medium">Modelo da moto</label><input id="moto-model" type="text" placeholder="Honda Fan" class="w-full h-10 px-3 text-sm mt-1 outline-none rounded-2xl" style="background:#f5f5f5 !important" aria-label="Modelo da moto" /></div><div><label class="text-sm font-medium">Placa</label><input id="moto-placa" type="text" placeholder="ABC-1234" class="w-full h-10 px-3 text-sm mt-1 outline-none rounded-2xl" style="background:#f5f5f5 !important" aria-label="Placa" /></div></div>
+          <div class="mt-2"><label class="text-sm font-medium">📍 Sua localização (opcional)</label><div class="flex gap-2 mt-1"><input id="moto-lat" type="text" placeholder="Latitude" readonly class="w-1/2 h-10 px-3 text-sm bg-gray-100 rounded-xl" /><input id="moto-lng" type="text" placeholder="Longitude" readonly class="w-1/2 h-10 px-3 text-sm bg-gray-100 rounded-xl" /></div><button type="button" onclick="getCurrentPositionForCadastro((lat,lng)=>{ document.getElementById('moto-lat').value=lat; document.getElementById('moto-lng').value=lng; })" class="mt-2 w-full py-2 bg-red-600 text-white text-sm font-semibold rounded-xl shadow-md hover:shadow-lg transition-all">📍 Usar minha localização atual</button><p class="text-[10px] text-gray-400 mt-1">*Se não informada, não aparecerá no mapa.</p></div>
+          <button onclick="saveMotoboyWithLocation()" class="w-full h-11 font-bold btn-green rounded-2xl">🏍️ Enviar Cadastro</button>
+        </div>
+      `;
+    } else if (state.profileTab === 'admin') {
+      el.innerHTML = `
+        <div class="bg-white shadow-sm rounded-2xl p-4"><h3 class="font-bold text-sm">🛡️ Painel Administrativo</h3><p class="text-xs text-gray-400">Gerencie motoboys, lojas e pedidos.</p></div>
+        <div id="admin-content" class="space-y-4">Carregando...</div>
+      `;
+      renderAdminContent();
+    } else if (state.profileTab === 'sobre') {
+      el.innerHTML = `<div id="sobre-content" class="space-y-4"></div>`;
+      renderSobreContent();
+    }
+  }
+
+  // ========== FUNÇÃO DE LOCALIZAÇÃO CORRIGIDA ==========
+  function getCurrentPositionForCadastro(setLatLng) {
+    const btn = document.querySelector('#get-location-btn-store') || document.querySelector('#get-location-btn-moto');
+    if (!navigator.geolocation) {
+      showToast('Geolocalização não é suportada neste navegador.', 'error');
+      return;
+    }
+
+    if (btn) {
+      btn.disabled = true;
+      btn.textContent = '⏳ Buscando...';
+    }
+
+    showToast('Obtendo sua localização...', 'default');
+
+    const options = {
+      enableHighAccuracy: true,
+      timeout: 15000,
+      maximumAge: 60000
+    };
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        setLatLng(lat, lng);
+        showToast(`📍 Localização obtida: ${lat.toFixed(6)}, ${lng.toFixed(6)}`, 'success');
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = '📍 Usar minha localização atual';
+        }
+      },
+      (err) => {
+        let msg = 'Erro ao obter localização.';
+        switch (err.code) {
+          case err.PERMISSION_DENIED:
+            msg = 'Permissão negada. Ative a localização nas configurações do navegador.';
+            break;
+          case err.POSITION_UNAVAILABLE:
+            msg = 'Localização indisponível. Tente novamente mais tarde.';
+            break;
+          case err.TIMEOUT:
+            msg = 'Tempo esgotado. Verifique seu GPS e tente novamente.';
+            break;
+          default:
+            msg = 'Erro desconhecido: ' + err.message;
+        }
+        showToast(msg, 'error');
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = '📍 Usar minha localização atual';
+        }
+      },
+      options
+    );
+  }
+
+  // ========== LOJISTA: LISTA DE LOJAS ==========
+  function renderLojistaStoreList(el) {
+    let html = `
+      <div class="bg-white shadow-sm rounded-2xl p-4">
+        <h3 class="font-bold text-sm">🏪 Minhas Lojas</h3>
+        <p class="text-xs text-gray-400 mt-1">Gerencie suas lojas e produtos</p>
+      </div>
+      <div class="bg-white shadow-sm rounded-2xl p-4 space-y-4">
+        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Cadastrar Nova Loja</p>
+        <div><label class="text-sm font-medium">Nome da Loja *</label><input id="store-name" type="text" placeholder="Ex: Açaí do João" class="w-full h-10 px-3 text-sm mt-1 outline-none rounded-2xl" style="background:#f5f5f5 !important" aria-label="Nome da loja" /></div>
+        <div><label class="text-sm font-medium">Descrição</label><textarea id="store-desc" placeholder="Descreva sua loja..." class="w-full h-20 px-3 py-2 text-sm mt-1 resize-none outline-none rounded-2xl" style="background:#f5f5f5 !important" aria-label="Descrição"></textarea></div>
+        <div><label class="text-sm font-medium">Categoria</label><select id="store-cat" class="w-full h-10 px-3 text-sm mt-1 outline-none bg-white rounded-2xl" aria-label="Categoria"><option value="restaurante">🍔 Restaurante</option><option value="mercado">🛒 Mercado</option><option value="farmacia">💊 Farmácia</option><option value="acai">🍇 Açaí</option><option value="padaria">🍞 Padaria</option><option value="pet">🐾 Pet</option><option value="outros">📦 Outros</option></select></div>
+        <div class="grid grid-cols-2 gap-3"><div><label class="text-sm font-medium">Taxa entrega (R$)</label><input id="store-fee" type="number" step="0.01" min="0" value="0" class="w-full h-10 px-3 text-sm mt-1 outline-none rounded-2xl" style="background:#f5f5f5 !important" aria-label="Taxa de entrega" /></div><div><label class="text-sm font-medium">Raio de entrega</label><input id="store-radius" type="text" placeholder="Ex: 5km" class="w-full h-10 px-3 text-sm mt-1 outline-none rounded-2xl" style="background:#f5f5f5 !important" aria-label="Raio de entrega" /></div></div>
+        <div class="mt-2"><label class="text-sm font-medium">📍 Localização (opcional)</label>
+          <div class="flex gap-2 mt-1">
+            <input id="store-lat" type="text" placeholder="Latitude" readonly class="w-1/2 h-10 px-3 text-sm bg-gray-100 rounded-xl" />
+            <input id="store-lng" type="text" placeholder="Longitude" readonly class="w-1/2 h-10 px-3 text-sm bg-gray-100 rounded-xl" />
+          </div>
+          <button type="button" id="get-location-btn-store" onclick="getCurrentPositionForCadastro((lat,lng)=>{ document.getElementById('store-lat').value=lat; document.getElementById('store-lng').value=lng; })" class="mt-2 w-full py-2 bg-red-600 text-white text-sm font-semibold rounded-xl shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+            📍 Usar minha localização atual
+          </button>
+          <p class="text-[10px] text-gray-400 mt-1">*Se não informada, não aparecerá no mapa.</p>
+        </div>
+
+        <div class="switch-container">
+          <label class="switch">
+            <input type="checkbox" id="store-is-open" checked>
+            <span class="slider"></span>
+          </label>
+          <span class="switch-label">Loja aberta</span>
+        </div>
+
+        <button onclick="saveStoreWithLocation()" class="w-full h-11 font-bold bg-red-600 text-white rounded-2xl">Cadastrar Loja</button>
+      </div>
+      <div id="my-stores-list"></div>
+    `;
+    el.innerHTML = html;
+    renderMyStoresList();
+  }
+
+  function renderMyStoresList() {
+    const container = document.getElementById('my-stores-list');
+    if (!container) return;
+    if (!myStores || myStores.length === 0) {
+      container.innerHTML = '<div class="bg-white shadow-sm rounded-2xl p-4 text-center"><p class="text-gray-400 text-sm">Nenhuma loja cadastrada ainda.</p></div>';
+      return;
+    }
+    let html = '<div class="space-y-3">';
+    myStores.forEach(store => {
+      const prods = myStoreProducts[store.id] || [];
+      const statusText = store.is_open ? '🟢 Aberta' : '🔴 Fechada';
+      const statusColor = store.is_open ? 'text-green-600' : 'text-red-500';
+      html += `
+        <div class="lojista-store-card" onclick="selectLojistaStore('${store.id}')">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-gradient-to-br from-gray-100 to-gray-50 rounded-xl flex items-center justify-center text-xl">${store.emoji || '🏪'}</div>
+            <div class="flex-1 min-w-0">
+              <p class="font-bold text-sm truncate">${store.name}</p>
+              <p class="text-xs text-gray-400">${store.category} · ${prods.length} produtos</p>
+              <span class="text-xs font-semibold ${statusColor}">${statusText}</span>
+            </div>
+            <span class="text-red-500 text-sm font-medium">→</span>
+          </div>
+          <button onclick="event.stopPropagation(); toggleStoreStatus('${store.id}')" class="w-full mt-3 py-2.5 text-sm font-bold rounded-full ${store.is_open ? 'bg-red-500 text-white hover:bg-red-600' : 'bg-green-500 text-white hover:bg-green-600'} transition-colors shadow-sm">
+            ${store.is_open ? '🔒 Fechar Loja' : '🔓 Abrir Loja'}
+          </button>
+        </div>
+      `;
+    });
+    html += '</div>';
+    container.innerHTML = html;
+  }
+
+  function selectLojistaStore(storeId) {
+    state.selectedStoreId = storeId;
+    renderProfileTab();
+  }
+
+  // ========== LOJISTA: PAINEL DE PRODUTOS ==========
+  function renderLojistaProductPanel(el) {
+    const store = myStores.find(s => s.id === state.selectedStoreId);
+    if (!store) {
+      state.selectedStoreId = null;
+      renderProfileTab();
+      return;
+    }
+    const prods = myStoreProducts[store.id] || [];
+    const statusText = store.is_open ? '🟢 Aberta' : '🔴 Fechada';
+    const statusColor = store.is_open ? 'text-green-600' : 'text-red-500';
+    let html = `
+      <div class="flex items-center justify-between mb-2">
+        <div class="flex items-center gap-2">
+          <button onclick="goBackLojista()" class="back-btn-card">← Voltar</button>
+          <span class="text-sm text-gray-400">|</span>
+          <span class="font-bold text-sm">${store.emoji} ${store.name}</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="text-xs font-semibold ${statusColor}">${statusText}</span>
+          <button onclick="toggleStoreStatus('${store.id}')" class="px-3 py-1 text-xs font-bold rounded-full ${store.is_open ? 'bg-red-100 text-red-600 hover:bg-red-200' : 'bg-green-100 text-green-600 hover:bg-green-200'} transition-colors">
+            ${store.is_open ? '🔒 Fechar' : '🔓 Abrir'}
+          </button>
+        </div>
+      </div>
+      <div class="bg-white shadow-sm rounded-2xl p-4">
+        <h3 class="font-bold text-sm">📦 Produtos (${prods.length})</h3>
+        <div class="mt-3 space-y-2">
+          ${prods.length === 0 ? '<p class="text-sm text-gray-400 text-center py-4">Nenhum produto cadastrado.</p>' :
+            prods.map(p => `
+              <div class="product-card">
+                <div class="w-8 h-8 bg-red-50 rounded-full flex items-center justify-center text-base">${p.emoji || '📦'}</div>
+                <div class="flex-1 min-w-0">
+                  <p class="font-semibold text-sm truncate">${p.name}</p>
+                  <p class="text-xs text-gray-400">R$ ${(p.price || 0).toFixed(2).replace('.', ',')} · Estoque: ${p.stock || 0}</p>
+                </div>
+                <button onclick="deleteProduct('${p.id}','${store.id}')" class="text-xs text-red-500 font-semibold hover:underline px-2">Excluir</button>
+              </div>
+            `).join('')
+          }
+        </div>
+      </div>
+      <div class="bg-white shadow-sm rounded-2xl p-4 space-y-3">
+        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider">+ Adicionar Produto</p>
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="text-xs font-medium">Nome *</label><input id="prod-name-${store.id}" type="text" placeholder="Ex: Açaí 500ml" class="w-full h-9 px-3 text-sm mt-0.5 outline-none rounded-xl" style="background:#f5f5f5 !important" aria-label="Nome do produto" /></div>
+          <div><label class="text-xs font-medium">Emoji</label><input id="prod-emoji-${store.id}" type="text" placeholder="🍇" maxlength="2" class="w-full h-9 px-3 text-sm mt-0.5 outline-none rounded-xl" style="background:#f5f5f5 !important" aria-label="Emoji" /></div>
+        </div>
+        <div><label class="text-xs font-medium">Descrição</label><input id="prod-desc-${store.id}" type="text" placeholder="Descrição do produto..." class="w-full h-9 px-3 text-sm mt-0.5 outline-none rounded-xl" style="background:#f5f5f5 !important" aria-label="Descrição do produto" /></div>
+        <div class="grid grid-cols-2 gap-3">
+          <div><label class="text-xs font-medium">Preço (R$) *</label><input id="prod-price-${store.id}" type="number" step="0.01" min="0" placeholder="0.00" class="w-full h-9 px-3 text-sm mt-0.5 outline-none rounded-xl" style="background:#f5f5f5 !important" aria-label="Preço" /></div>
+          <div><label class="text-xs font-medium">Estoque</label><input id="prod-stock-${store.id}" type="number" min="0" placeholder="0" class="w-full h-9 px-3 text-sm mt-0.5 outline-none rounded-xl" style="background:#f5f5f5 !important" aria-label="Estoque" /></div>
+        </div>
+        <button onclick="saveProduct('${store.id}')" class="w-full h-10 font-bold bg-red-600 text-white text-sm rounded-xl shadow-md hover:shadow-lg transition-all">Adicionar Produto</button>
+      </div>
+    `;
+    el.innerHTML = html;
+  }
+
+  function goBackLojista() {
+    state.selectedStoreId = null;
+    renderProfileTab();
+  }
+
+  // ========== FUNÇÕES LOJISTA (CRUD) ==========
+  let myStores = [];
+  let myStoreProducts = {};
+  let openProductStoreId = null;
+
+  async function loadMyStores() {
+    if (!state.currentUser) return;
+    try {
+      const { data, error } = await sb.from('stores').select('*').eq('owner_id', state.currentUser.id);
+      if (error) throw error;
+      myStores = data || [];
+      myStoreProducts = {};
+      await Promise.all(myStores.map(async store => {
+        const { data: prods } = await sb.from('products').select('*').eq('store_id', store.id);
+        myStoreProducts[store.id] = prods || [];
+      }));
+      renderProfileTab();
+    } catch (err) {
+      showToast('Erro ao carregar minhas lojas', 'error');
+    }
+  }
+
+  async function toggleStoreStatus(storeId) {
+    const store = myStores.find(s => s.id === storeId);
+    if (!store) return;
+    const newStatus = !store.is_open;
+    try {
+      const { error } = await sb.from('stores').update({ is_open: newStatus }).eq('id', storeId);
+      if (error) throw error;
+      store.is_open = newStatus;
+      showToast(`Loja ${newStatus ? 'aberta' : 'fechada'} com sucesso!`, 'success');
+      renderMyStoresList();
+      if (state.selectedStoreId) {
+        renderProfileTab();
+      }
+    } catch (err) {
+      showToast('Erro ao alterar status: ' + err.message, 'error');
+    }
+  }
+
+  async function saveStoreWithLocation() {
+    const name = document.getElementById('store-name')?.value.trim();
+    if (!name) { showToast('Nome da loja obrigatório', 'error'); return; }
+    const lat = parseFloat(document.getElementById('store-lat')?.value);
+    const lng = parseFloat(document.getElementById('store-lng')?.value);
+    const cat = document.getElementById('store-cat')?.value;
+    const fee = parseFloat(document.getElementById('store-fee')?.value);
+    if (isNaN(fee) || fee < 0) { showToast('Taxa de entrega inválida', 'error'); return; }
+    const isOpen = document.getElementById('store-is-open')?.checked ?? true;
+
+    try {
+      const { error } = await sb.from('stores').insert({
+        name,
+        description: document.getElementById('store-desc')?.value.trim() || '',
+        category: cat,
+        emoji: CATEGORY_EMOJIS[cat] || '📦',
+        delivery_fee: fee,
+        delivery_radius: document.getElementById('store-radius')?.value.trim() || '',
+        owner_id: state.currentUser.id,
+        owner_email: state.currentUser.email,
+        latitude: isNaN(lat) ? null : lat,
+        longitude: isNaN(lng) ? null : lng,
+        is_open: isOpen
+      });
+      if (error) throw error;
+      showToast(`Loja cadastrada ${isOpen ? 'aberta' : 'fechada'}!`, 'success');
+      await loadHomeData();
+      await loadMyStores();
+    } catch (err) {
+      showToast('Erro ao cadastrar loja: ' + err.message, 'error');
+    }
+  }
+
+  async function saveProduct(storeId) {
+    const name = document.getElementById('prod-name-' + storeId)?.value.trim();
+    const price = parseFloat(document.getElementById('prod-price-' + storeId)?.value);
+    if (!name) { showToast('Nome do produto obrigatório', 'error'); return; }
+    if (isNaN(price) || price <= 0) { showToast('Preço inválido', 'error'); return; }
+    try {
+      const { error } = await sb.from('products').insert({
+        store_id: storeId,
+        name,
+        description: document.getElementById('prod-desc-' + storeId)?.value.trim() || '',
+        price,
+        emoji: document.getElementById('prod-emoji-' + storeId)?.value.trim() || '📦',
+        stock: parseInt(document.getElementById('prod-stock-' + storeId)?.value) || 0,
+        is_available: true
+      });
+      if (error) throw error;
+      showToast('Produto cadastrado!', 'success');
+      await loadMyStores();
+    } catch (err) {
+      showToast('Erro ao cadastrar produto: ' + err.message, 'error');
+    }
+  }
+
+  async function deleteProduct(productId, storeId) {
+    if (!confirm('Excluir este produto?')) return;
+    try {
+      const { error } = await sb.from('products').delete().eq('id', productId);
+      if (error) throw error;
+      showToast('Produto excluído', 'success');
+      await loadMyStores();
+    } catch (err) {
+      showToast('Erro ao excluir produto', 'error');
+    }
+  }
+
+  async function saveMotoboyWithLocation() {
+    if (!state.currentUser) { showToast('Faça login primeiro', 'error'); return; }
+    const phone = document.getElementById('moto-phone')?.value.trim();
+    const cpf = document.getElementById('moto-cpf')?.value.trim();
+    if (!validatePhone(phone)) { showToast('Telefone inválido (ex: (11) 99999-9999)', 'error'); return; }
+    if (!validateCPF(cpf)) { showToast('CPF inválido', 'error'); return; }
+    const lat = parseFloat(document.getElementById('moto-lat')?.value);
+    const lng = parseFloat(document.getElementById('moto-lng')?.value);
+    try {
+      const { error } = await sb.from('motoboys').insert({
+        user_id: state.currentUser.id,
+        full_name: state.currentUser.full_name || '',
+        phone,
+        cpf,
+        modelo_moto: document.getElementById('moto-model')?.value.trim() || '',
+        placa: document.getElementById('moto-placa')?.value.trim() || '',
+        status: 'pendente',
+        is_available: true,
+        latitude: isNaN(lat) ? null : lat,
+        longitude: isNaN(lng) ? null : lng
+      });
+      if (error) throw error;
+      showToast('Cadastro enviado para aprovação!', 'success');
+    } catch (err) {
+      showToast('Erro ao enviar cadastro: ' + err.message, 'error');
+    }
+  }
+
+  // ==================== SOBRE ====================
+  function renderSobreContent() {
+    const container = document.getElementById('sobre-content');
+    if (!container) return;
+    const developers = [
+      'Ana Cristina da Silva Rocha',
+      'Ana Karen Camilo Nogueira',
+      'Ana Kesya da Silva Alencar',
+      'Franciele Alves dos Santos',
+      'Maria Nicoly Rodrigues dos Santos',
+      'Huagner Marques de Negreiros',
+      'Saulo Davi Campelo Viana',
+      'Chloe Rodrigues de Sousa'
+    ];
+    container.innerHTML = `
+      <div class="bg-white shadow-sm rounded-2xl p-4 text-center">
+        <div class="text-4xl mb-2">💡</div>
+        <h3 class="font-extrabold text-lg">Sobre o Delivery app</h3>
+        <p class="text-xs text-gray-500 mt-1">Versão 2.0.0</p>
+        <p class="text-xs text-gray-500">Sistema de delivery local desenvolvido com ❤️</p>
+      </div>
+      <div class="bg-white shadow-sm rounded-2xl p-4">
+        <p class="font-bold text-sm text-center mb-3">👨‍💻 Equipe de Desenvolvimento</p>
+        <div class="space-y-1">
+          ${developers.map(name => `<p class="text-sm text-gray-700 text-center">${name}</p>`).join('')}
+        </div>
+      </div>
+      <div class="bg-gray-50 rounded-2xl p-4 text-center text-xs text-gray-400">
+        <p>© 2026 Delivery app – Todos os direitos reservados.</p>
+        <p>Powered by Supabase & Leaflet</p>
+      </div>
+    `;
+  }
+
+  // ==================== ADMIN ====================
+  async function renderAdminContent() {
+    const container = document.getElementById('admin-content');
+    if (!container) return;
+    try {
+      const { data: pendingMotos } = await sb.from('motoboys').select('*').eq('status', 'pendente');
+      const { data: activeMotos } = await sb.from('motoboys').select('*').eq('status', 'aprovado').eq('is_available', true);
+      const { data: allStores } = await sb.from('stores').select('*, owner_email').order('created_at', { ascending: false }).limit(10);
+      const { data: recentOrders } = await sb.from('orders').select('*, order_items(name, quantity)').order('created_at', { ascending: false }).limit(10);
+      let html = '';
+      html += `<div class="bg-white shadow-sm rounded-2xl p-4"><p class="font-bold text-sm mb-3">🏍️ Motoboys Pendentes (${pendingMotos?.length || 0})</p>`;
+      if (!pendingMotos || pendingMotos.length === 0) html += `<p class="text-xs text-gray-400">Nenhum motoboy aguardando aprovação.</p>`;
+      else pendingMotos.forEach(m => {
+        html += `<div class="flex items-center justify-between py-2 border-b border-gray-100 last:border-0"><div><p class="font-semibold text-sm">${m.full_name}</p><p class="text-xs text-gray-400">${m.phone || ''} · ${m.modelo_moto || ''} ${m.placa || ''}</p></div><div class="flex gap-2"><button onclick="approveMotoboy('${m.id}')" class="bg-green-500 text-white text-xs font-bold px-3 py-1 rounded-full hover:bg-green-600 transition-colors">✅ Aprovar</button><button onclick="deleteMotoboy('${m.id}')" class="bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full hover:bg-red-600 transition-colors">🗑️ Excluir</button></div></div>`;
+      });
+      html += `</div>`;
+      html += `<div class="bg-white shadow-sm rounded-2xl p-4"><p class="font-bold text-sm mb-3">🏍️ Motoboys Ativos (${activeMotos?.length || 0})</p>`;
+      if (!activeMotos || activeMotos.length === 0) html += `<p class="text-xs text-gray-400">Nenhum motoboy ativo.</p>`;
+      else activeMotos.forEach(m => {
+        html += `<div class="flex items-center justify-between py-2 border-b border-gray-100 last:border-0"><div><p class="font-semibold text-sm">${m.full_name}</p><p class="text-xs text-gray-400">${m.phone || ''} · ${m.modelo_moto || ''} ${m.placa || ''}</p></div><button onclick="deleteMotoboy('${m.id}')" class="bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-full hover:bg-red-700 transition-colors">🗑️ Excluir</button></div>`;
+      });
+      html += `</div>`;
+      html += `<div class="bg-white shadow-sm rounded-2xl p-4"><p class="font-bold text-sm mb-3">🏪 Lojas (últimas 10)</p>`;
+      if (!allStores || allStores.length === 0) html += `<p class="text-xs text-gray-400">Nenhuma loja cadastrada.</p>`;
+      else allStores.forEach(s => {
+        html += `<div class="flex items-center justify-between py-2 border-b border-gray-100 last:border-0"><div><p class="font-semibold text-sm">${s.name}</p><p class="text-xs text-gray-400">${s.category} · ${s.owner_email || 'Sem dono'}</p><span class="text-[10px] font-semibold ${s.is_open ? 'text-green-600' : 'text-gray-400'}">${s.is_open ? 'Aberta' : 'Fechada'}</span></div><button onclick="deleteStore('${s.id}')" class="bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-full hover:bg-red-700 transition-colors">🗑️ Excluir</button></div>`;
+      });
+      html += `</div>`;
+      html += `<div class="bg-white shadow-sm rounded-2xl p-4"><p class="font-bold text-sm mb-3">📦 Pedidos Recentes</p>`;
+      if (!recentOrders || recentOrders.length === 0) html += `<p class="text-xs text-gray-400">Nenhum pedido realizado.</p>`;
+      else recentOrders.forEach(o => {
+        const items = (o.order_items || []).map(i => i.quantity + 'x ' + i.name).join(', ');
+        html += `<div class="py-2 border-b border-gray-100 last:border-0"><div class="flex justify-between"><p class="font-semibold text-sm">${o.store_name}</p><span class="text-xs font-semibold bg-yellow-100 px-2 py-0.5 rounded-full">${o.status}</span></div><p class="text-xs text-gray-400 truncate">${items || 'Sem itens'}</p><div class="flex justify-between mt-1"><span class="text-[10px] text-gray-400">${new Date(o.created_at).toLocaleString()}</span><span class="text-sm font-bold text-red-600">R$ ${(o.total || 0).toFixed(2).replace('.', ',')}</span></div></div>`;
+      });
+      html += `</div>`;
+      container.innerHTML = html;
+    } catch (err) {
+      container.innerHTML = '<p class="text-red-500 text-sm">Erro ao carregar dados administrativos.</p>';
+      console.error(err);
+    }
+  }
+
+  async function approveMotoboy(id) {
+    if (!confirm('Aprovar este motoboy?')) return;
+    try {
+      await sb.from('motoboys').update({ status: 'aprovado' }).eq('id', id);
+      showToast('Motoboy aprovado!', 'success');
+      await loadHomeData();
+      renderAdminContent();
+    } catch (err) {
+      showToast('Erro ao aprovar motoboy: ' + err.message, 'error');
+    }
+  }
+
+  async function deleteMotoboy(id) {
+    if (!confirm('Excluir permanentemente este motoboy?')) return;
+    try {
+      await sb.from('motoboys').delete().eq('id', id);
+      showToast('Motoboy excluído.', 'success');
+      await loadHomeData();
+      renderAdminContent();
+    } catch (err) {
+      showToast('Erro ao excluir motoboy: ' + err.message, 'error');
+    }
+  }
+
+  async function deleteStore(storeId) {
+    if (!confirm('Excluir permanentemente esta loja e todos os seus produtos?')) return;
+    try {
+      await sb.from('products').delete().eq('store_id', storeId);
+      await sb.from('stores').delete().eq('id', storeId);
+      showToast('Loja excluída.', 'success');
+      await loadHomeData();
+      renderAdminContent();
+    } catch (err) {
+      showToast('Erro ao excluir loja: ' + err.message, 'error');
+    }
+  }
+
+  function showProfileView() {
+    document.getElementById('profile-view').style.display = 'block';
+    renderProfileHeader();
+    renderProfileTab();
+  }
+
+  // ==================== CHAT IA ====================
+  function openAIChat() {
+    document.getElementById('chat-list-view').style.display = 'none';
+    document.getElementById('chat-ai-view').style.display = 'flex';
+    document.getElementById('chat-messages-area').scrollTop = 9999;
+  }
+
+  function closeAIChat() {
+    document.getElementById('chat-ai-view').style.display = 'none';
+    document.getElementById('chat-list-view').style.display = 'block';
+    const qq = document.getElementById('quick-questions');
+    if (qq) qq.style.display = 'flex';
+  }
+
+  function appendChatMsg(role, content) {
+    const area = document.getElementById('chat-messages-area');
+    const qq = document.getElementById('quick-questions');
+    if (qq) qq.style.display = 'none';
+    const div = document.createElement('div');
+    div.className = `msg ${role === 'user' ? 'msg-user' : 'msg-bot'}`;
+    if (role === 'bot') {
+      div.innerHTML = `<span class="bot-name">🤖 Delivery app:</span> ${content}`;
+    } else {
+      div.textContent = content;
+    }
+    area.appendChild(div);
+    area.scrollTop = area.scrollHeight;
+  }
+
+  function appendTyping() {
+    const area = document.getElementById('chat-messages-area');
+    const div = document.createElement('div');
+    div.id = 'typing-indicator';
+    div.className = 'typing-indicator';
+    div.innerHTML = '<span></span><span></span><span></span>';
+    area.appendChild(div);
+    area.scrollTop = area.scrollHeight;
+  }
+
+  function removeTyping() { const el = document.getElementById('typing-indicator'); if (el) el.remove(); }
+
+  async function sendChatMsg(text) {
+    if (!text.trim()) return;
+    appendChatMsg('user', text);
+    appendTyping();
+    await new Promise(r => setTimeout(r, 1000 + Math.random() * 800));
+    removeTyping();
+    const resps = {
+      rastrear: 'Acesse "Perfil" → "Meus Pedidos" para acompanhar o status em tempo real! 📦',
+      loja: 'Vá em "Perfil" → aba "Lojista" e preencha os dados. É rápido e gratuito! 🏪',
+      'entrega segura': 'Ao finalizar, você escolhe: com código, com foto, na porta ou sem contato. O entregador confirma na entrega! 🛡️',
+      pagamento: 'O pagamento é feito diretamente na entrega, podendo ser em dinheiro ou PIX. 💳',
+      motoboy: 'Para se tornar um entregador, acesse "Perfil" → aba "Entregador" e cadastre seus dados! 🏍️',
+      cancelar: 'Para cancelar um pedido, entre em contato diretamente com a loja pelo chat. ❌'
+    };
+    const key = Object.keys(resps).find(k => text.toLowerCase().includes(k));
+    const reply = key ? resps[key] : 'Obrigado pela sua mensagem! 😊 Em breve um atendente irá te responder. Para questões urgentes: huagnermarques@gmail.com';
+    appendChatMsg('bot', reply);
+  }
+
+  function sendChatFromInput() {
+    const inp = document.getElementById('chat-input');
+    const t = inp.value.trim();
+    if (!t) return;
+    inp.value = '';
+    sendChatMsg(t);
+  }
+
+  // ==================== INIT ====================
+  function setGreeting() {
+    const h = new Date().getHours();
+    const el = document.getElementById('greeting-text');
+    if (el) el.textContent = h < 12 ? 'Bom dia! 👋' : h < 18 ? 'Boa tarde! 👋' : 'Boa noite! 👋';
+  }
+
+  // ==================== LOAD HOME DATA COM LOGS ====================
+  async function loadHomeData() {
+    try {
+      console.log('🔍 Carregando lojas...');
+      const { data: s, error: err } = await sb.from('stores').select('*').order('created_at', { ascending: false });
+      if (err) {
+        console.error('❌ Erro ao buscar lojas:', err);
+        showToast('Erro ao carregar lojas: ' + err.message, 'error');
+        return;
+      }
+      console.log('✅ Lojas carregadas:', s);
+      state.allStores = s || [];
+      // Carregar motoboys (opcional)
+      const { data: m, error: mErr } = await sb.from('motoboys').select('*').eq('status', 'aprovado').eq('is_available', true);
+      if (mErr) console.warn('Erro ao carregar motoboys:', mErr);
+      state.allMotoboys = m || [];
+      document.getElementById('motoboy-count').textContent = state.allMotoboys.length + ' motoboys';
+      renderFeaturedBanner();
+      renderStoreGrid();
+    } catch (err) {
+      console.error('❌ Erro inesperado:', err);
+      showToast('Erro ao carregar dados', 'error');
+    }
+  }
+
+  async function initAppAfterLogin() {
+    setGreeting();
+    renderCategoryFilter();
+    renderCartBars();
+    await loadHomeData();
+    await loadNotifications();
+    if (state.notifInterval) clearInterval(state.notifInterval);
+    state.notifInterval = setInterval(loadNotifications, 20000);
+    setTimeout(() => {
+      if (state.currentUser) {
+        if (!state.locationPermissionAsked) showLocationModal();
+        if (!state.notificationPermissionAsked) showNotificationModal();
+      }
+    }, 2000);
+    showProfileView();
+  }
+
+  // ==================== EXPOR FUNÇÕES GLOBAIS ====================
+  // Isso garante que os botões com onclick="..." funcionem
+  window.toggleStoreStatus = toggleStoreStatus;
+  window.selectLojistaStore = selectLojistaStore;
+  window.saveStoreWithLocation = saveStoreWithLocation;
+  window.saveProduct = saveProduct;
+  window.deleteProduct = deleteProduct;
+  window.goBackLojista = goBackLojista;
+  window.getCurrentPositionForCadastro = getCurrentPositionForCadastro;
+  window.navigate = navigate;
+  window.goBack = goBack;
+  window.logout = logout;
+  window.toggleNotifPanel = toggleNotifPanel;
+  window.markAllRead = markAllRead;
+  window.denyLocation = denyLocation;
+  window.allowLocation = allowLocation;
+  window.denyNotification = denyNotification;
+  window.allowNotification = allowNotification;
+  window.requestUserLocation = requestUserLocation;
+  window.resetPassword = resetPassword;
+  window.openAIChat = openAIChat;
+  window.closeAIChat = closeAIChat;
+  window.sendChatMsg = sendChatMsg;
+  window.sendChatFromInput = sendChatFromInput;
+  window.setCategory = setCategory;
+  window.setMapFilter = setMapFilter;
+  window.setProfileTab = setProfileTab;
+
+  document.addEventListener('DOMContentLoaded', async () => {
+    loadCart();
+    renderCartBars();
+    const savedUser = loadSession();
+    if (savedUser) {
+      const { data: { session } } = await sb.auth.getSession();
+      if (session?.user) {
+        state.currentUser = {
+          id: session.user.id,
+          email: session.user.email,
+          full_name: session.user.user_metadata?.full_name || ''
+        };
+        saveSession(state.currentUser);
+        showApp();
+        return;
+      } else {
+        clearSession();
+      }
+    }
+    document.getElementById('auth-container').style.display = 'flex';
+    document.getElementById('app-main').style.display = 'none';
+  });
+
+  document.addEventListener('click', function(e) {
+    const wrap = document.getElementById('notif-bell-wrap');
+    const panel = document.getElementById('notif-panel');
+    if (wrap && panel && !wrap.contains(e.target) && panel.style.display === 'block') {
+      panel.style.display = 'none';
+    }
+  });
+</script>
+</body>
+</html>
