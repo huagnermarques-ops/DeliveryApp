@@ -321,6 +321,22 @@
   </div>
   <div id="location-badge" class="location-badge" style="display: none;" onclick="requestUserLocation()"><span class="location-dot"></span><span id="location-status">Obtendo localização...</span></div>
 </div>
+  
+  <!-- Modal de código de entrega -->
+<div id="delivery-code-modal" class="permission-modal" style="display:none;">
+  <div class="permission-card">
+    <div class="permission-icon">🔑</div>
+    <div class="permission-title">Código de entrega</div>
+    <div class="permission-desc">Peça o código de 4 dígitos ao cliente para confirmar a entrega</div>
+    <input type="text" id="delivery-code-input" maxlength="4" inputmode="numeric" pattern="[0-9]*" placeholder="0000"
+           style="text-align:center; font-size:36px; letter-spacing:14px; width:100%; padding:16px 8px; border-radius:16px; background:#f5f5f5; font-weight:900; margin-bottom:8px; color:#111827; outline:none;" />
+    <div id="delivery-code-error" style="color:#dc2626; font-size:12px; margin-bottom:12px; display:none; font-weight:600;"></div>
+    <div class="permission-buttons">
+      <button class="permission-btn permission-btn-secondary" onclick="closeDeliveryCodeModal()">Cancelar</button>
+      <button class="permission-btn permission-btn-primary" onclick="validateDeliveryCode()">Confirmar</button>
+    </div>
+  </div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
