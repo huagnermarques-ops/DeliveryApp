@@ -1317,75 +1317,45 @@ function setEntregadorView(v) {
   if (bm) bm.className = `flex-1 py-2.5 text-sm font-bold rounded-full ${v === 'minhas' ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-700'}`;
   renderEntregadorContent();
 }
-async function loadEntregadorDeliveries() {
-  if (!state.entregadorAtual) return;
-  const container = document.getElementById('entregador-content');
-  if (!container) return;
-  container.innerHTML = '<div class="flex justify-center py-8"><div class="w-6 h-6 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div></div>';
+async function loginAsEntregador() {
+  const phone = document.getElementById('entregador-phone-input').value.trim();
+  const err = document.getElementById('entregador-login-error');
+  if (!phone) { err.textContent = 'Digite o telefone'; err.style.display = 'block'; return; }
+  err.style.display = 'none';
+
   try {
-    const uid = state.entregadorAtual.id;
-    const { data } = await sb.from('orders').select('*, order_items(name, quantity)').in('status', ['saiu', 'entregue']).order('created_at', { ascending: false }).limit(50);
-    entregadorOrders = (data || []).filter(o => !o.motoboy_id || o.motoboy_id === uid);
-    renderEntregadorContent();
-  } catch(e) { container.innerHTML = `<div class="bg-white shadow-sm rounded-2xl p-4"><p class="text-red-500 text-sm">Erro: ${e.message}</p></div>`; }
-}
-function renderEntregadorContent() {
-  const container = document.getElementById('entregador-content');
-  if (!container) return;
-  const uid = state.entregadorAtual.id;
-  const view = state.entregadorView || 'disponiveis';
-  let filtered = view === 'disponiveis' ? entregadorOrders.filter(o => o.status === 'saiu' && !o.motoboy_id) : entregadorOrders.filter(o => o.motoboy_id === uid);
-  let statsHtml = '';
-  if (view === 'minhas') {
-    const today = new Date().toDateString();
-    const todayDelivered = filtered.filter(o => o.status === 'entregue' && new Date(o.created_at).toDateString() === today);
-    const earnings = todayDelivered.reduce((s, o) => s + (o.delivery_fee || 5), 0);
-    statsHtml = `<div class="grid grid-cols-3 gap-2 mb-3"><div class="stat-card"><div class="stat-value">${todayDelivered.length}</div><div class="stat-label">Hoje</div></div><div class="stat-card"><div class="stat-value">R$ ${fmt(earnings)}</div><div class="stat-label">Ganhos</div></div><div class="stat-card"><div class="stat-value">${filtered.length}</div><div class="stat-label">Total</div></div></div>`;
+    const { data, error } = await sb.rpc('login_entregador', { phone_input: phone });
+    if (error) throw error;
+
+    const found = Array.isArray(data) ? data[0] : data;
+    if (!found) {
+      err.textContent = '❌ Telefone não encontrado.';
+      err.style.display = 'block';
+      return;
+    }
+
+    state.entregadorAtual = found;
+    state.currentUser = {
+      id: found.id,
+      email: (found.phone || '') + '@entregador.local',
+      full_name: found.full_name,
+      is_entregador: true
+    };
+    saveEntregador(found);
+    closeEntregadorLogin();
+    document.getElementById('auth-container').style.display = 'none';
+    document.getElementById('app-main').style.display = 'block';
+    document.getElementById('profile-avatar').textContent = '🏍️';
+    document.getElementById('tab-btn-entregador').style.display = 'flex';
+    state.profileTab = 'entregador';
+    await initAppAfterLogin(true);
+    showToast('Bem-vindo, ' + found.full_name + '!', 'success');
+  } catch(e) {
+    console.error('Login entregador erro:', e);
+    err.textContent = 'Erro: ' + (e.message || 'desconhecido');
+    err.style.display = 'block';
+    }
   }
-  if (filtered.length === 0) { container.innerHTML = statsHtml + `<div class="bg-white shadow-sm rounded-2xl p-8 text-center"><div class="text-5xl mb-3">${view === 'disponiveis' ? '📭' : '🏍️'}</div><p class="text-gray-400">${view === 'disponiveis' ? 'Nenhuma entrega.' : 'Você ainda não aceitou.'}</p></div>`; return; }
-  let html = statsHtml + '<div class="space-y-3">';
-  filtered.forEach(o => {
-    const itemsList = (o.order_items || []).map(i => `${i.quantity}x ${i.name}`).join(', ');
-    const isMine = o.motoboy_id === uid;
-    const borderColor = view === 'disponiveis' ? '#eab308' : (o.status === 'entregue' ? '#22c55e' : '#3b82f6');
-    html += `<div class="delivery-card" style="border-left: 4px solid ${borderColor};"><div class="flex justify-between items-start mb-2"><div><p class="font-bold text-sm">${o.store_name}</p><p class="text-xs text-gray-400">Cliente: ${o.customer_name || 'Cliente'}</p></div>${isMine ? (o.status === 'entregue' ? '✅' : '🚴') : '🆕'}</div><div class="text-xs text-gray-600 space-y-1 mt-2"><p><strong>🛍️</strong> ${itemsList}</p><p><strong>💰</strong> R$ ${fmt(o.total)}</p><p><strong>📍</strong> ${o.delivery_address || 'Não informado'}</p></div>${!isMine ? `<button onclick="acceptDelivery('${o.id}')" class="w-full mt-3 bg-red-600 text-white text-sm font-bold px-4 py-3 rounded-full">✅ Aceitar</button>` : ''}${isMine && o.status === 'saiu' ? `<button onclick="openConfirmCodeModal('${o.id}', '${o.confirmation_code}')" class="w-full mt-3 bg-green-600 text-white text-xs font-bold px-4 py-3 rounded-full">🔑 Confirmar</button>` : ''}</div>`;
-  });
-  container.innerHTML = html + '</div>';
-}
-async function acceptDelivery(orderId) {
-  if (!state.entregadorAtual) return;
-  if (!confirm('Aceitar?')) return;
-  try {
-    const { error } = await sb.from('orders').update({ motoboy_id: state.entregadorAtual.id, motoboy_name: state.entregadorAtual.full_name }).eq('id', orderId);
-    if (error) throw error;
-    const order = entregadorOrders.find(o => o.id === orderId);
-    if (order && order.customer_id) await sb.from('notifications').insert({ user_id: order.customer_id, title: '🚴 Entregador a caminho!', message: `${state.entregadorAtual.full_name} está indo entregar seu pedido.`, type: 'entrega', is_read: false, created_at: new Date().toISOString() });
-    showToast('✅ Aceita!', 'success'); state.entregadorView = 'minhas'; setEntregadorView('minhas');
-  } catch (err) { showToast('Erro: ' + err.message, 'error'); }
-}
-function openConfirmCodeModal(orderId, code) {
-  pendingDeliveryOrder = orderId; pendingDeliveryCode = code;
-  const input = document.getElementById('delivery-code-input'); const err = document.getElementById('delivery-code-error');
-  input.value = ''; err.style.display = 'none';
-  document.getElementById('delivery-code-modal').style.display = 'flex';
-  setTimeout(() => input.focus(), 200);
-}
-function closeDeliveryCodeModal() { document.getElementById('delivery-code-modal').style.display = 'none'; pendingDeliveryOrder = null; pendingDeliveryCode = null; }
-async function validateDeliveryCode() {
-  const input = document.getElementById('delivery-code-input'); const err = document.getElementById('delivery-code-error');
-  const typed = (input.value || '').trim();
-  if (typed.length !== 4) { err.textContent = '4 dígitos'; err.style.display = 'block'; input.focus(); return; }
-  if (typed !== pendingDeliveryCode) { err.textContent = '❌ Errado'; err.style.display = 'block'; input.value = ''; input.focus(); return; }
-  const orderId = pendingDeliveryOrder;
-  const order = entregadorOrders.find(o => o.id === orderId);
-  closeDeliveryCodeModal();
-  try {
-    const { error } = await sb.from('orders').update({ status: 'entregue' }).eq('id', orderId);
-    if (error) throw error;
-    if (order && order.customer_id) await sb.from('notifications').insert({ user_id: order.customer_id, title: '✅ Entregue!', message: `Pedido entregue! Avalie a loja.`, type: 'entrega', is_read: false, created_at: new Date().toISOString() });
-    showToast('✅ OK!', 'success'); await loadEntregadorDeliveries();
-  } catch(e) { showToast('Erro', 'error'); }
-}
 
 // ============ LOJISTA ============
 function renderLojistaStoreList(el) {
@@ -1399,7 +1369,7 @@ function renderLojistaStoreList(el) {
         <input id="store-name" type="text" placeholder="Ex: Açaí do João" class="w-full h-12 px-4 text-base rounded-2xl" style="background:var(--bg) !important; color:var(--text) !important;" />
       </div>
       
-      <div>
+       <div>
         <label class="text-sm font-semibold block mb-1">Descrição</label>
         <textarea id="store-desc" placeholder="Descreva sua loja..." class="w-full h-20 px-4 py-3 text-base rounded-2xl resize-none" style="background:var(--bg) !important; color:var(--text) !important;"></textarea>
       </div>
