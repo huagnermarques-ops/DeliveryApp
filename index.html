@@ -1,0 +1,1928 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<meta name="theme-color" content="#dc2626" />
+<title>Delivery app – tudo perto de vc</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root { --bg: #f5f5f5; --card: #fff; --text: #0a0a0a; --muted: #6b7280; --border: #e5e7eb; }
+body.dark { --bg: #0f172a; --card: #1e293b; --text: #f1f5f9; --muted: #94a3b8; --border: #334155; background: #0f172a !important; color: #f1f5f9; }
+body.dark .bg-white { background: #1e293b !important; color: #f1f5f9 !important; }
+body.dark .bg-gray-50 { background: #0f172a !important; }
+body.dark .bg-gray-100 { background: #334155 !important; }
+body.dark .text-gray-400, body.dark .text-gray-500 { color: #94a3b8 !important; }
+body.dark .text-gray-700, body.dark .text-gray-900 { color: #f1f5f9 !important; }
+body.dark input, body.dark textarea, body.dark select { background: #334155 !important; color: #f1f5f9 !important; }
+
+* { border: none !important; outline: none !important; }
+*, *::before, *::after { font-family: 'Inter', sans-serif; box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); overflow-x: hidden; min-height: 100vh; transition: background 0.3s, color 0.3s; }
+input, textarea, select, button { font-family: inherit; }
+.rounded-xl { border-radius: 16px; } .rounded-2xl { border-radius: 20px; } .rounded-full { border-radius: 9999px; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; } .scrollbar-hide::-webkit-scrollbar { display: none; }
+.overflow-x-auto { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/* ===== FIX OVERFLOW: CUPOM E DASHBOARD ===== */
+.grid { min-width: 0; }
+.grid > * { min-width: 0; }
+.grid-cols-2 > *, .grid-cols-3 > * { min-width: 0; }
+.coupon-input { min-width: 0; }
+.coupon-input input { flex: 1 1 0; min-width: 0; }
+.coupon-input button { flex-shrink: 0; }
+.stat-card { min-width: 0; overflow: hidden; }
+.stat-value { font-size: 18px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stat-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.permission-card { max-width: min(380px, calc(100vw - 32px)); }
+#coupon-modal input, #coupon-modal select { min-width: 0; }
+#coupon-modal .flex { min-width: 0; }
+#coupon-modal .flex > * { min-width: 0; }
+/* ===== FIM FIX ===== */
+
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes bdot { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-6px)} }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.7; } }
+@keyframes musicWave { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(1.5); } }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: translateY(0); } }
+.animate-spin { animation: spin 1s linear infinite; } .animate-pulse { animation: pulse 2s ease-in-out infinite; } .fadeIn { animation: fadeIn 0.2s ease; }
+.page { display: none; } .page.active { display: block; }
+#toast-container { position:fixed; top:16px; left:50%; transform:translateX(-50%); z-index:9999; display:flex; flex-direction:column; gap:8px; pointer-events:none; width:calc(100% - 32px); max-width:400px; }
+.toast { border-radius:12px; padding:12px 16px; font-size:13px; font-weight:600; box-shadow:0 4px 24px rgba(0,0,0,.2); opacity:0; transform:translateY(-10px); transition:all .3s ease; pointer-events:auto; color:#fff; }
+.toast.show { opacity:1; transform:translateY(0); } .toast.success { background:#16a34a; } .toast.error { background:#dc2626; } .toast.default { background:#1a1a1a; }
+.flex { display:flex; } .flex-col { flex-direction:column; } .flex-1 { flex:1; } .items-center { align-items:center; } .justify-center { justify-content:center; } .justify-between { justify-content:space-between; } .flex-wrap { flex-wrap:wrap; } .flex-shrink-0 { flex-shrink:0; } .min-w-0 { min-width:0; }
+.grid { display:grid; } .grid-cols-2 { grid-template-columns: repeat(2, 1fr); } .grid-cols-3 { grid-template-columns: repeat(3, 1fr); } .gap-1 { gap:4px; } .gap-2 { gap:8px; } .gap-3 { gap:12px; }
+.space-y-3 > * + * { margin-top:12px; } .space-y-4 > * + * { margin-top:16px; } .space-y-2 > * + * { margin-top:8px; }
+.p-2 { padding:8px; } .p-3 { padding:12px; } .p-4 { padding:16px; } .p-5 { padding:20px; }
+.px-2 { padding-left:8px; padding-right:8px; } .px-3 { padding-left:12px; padding-right:12px; } .px-4 { padding-left:16px; padding-right:16px; } .px-5 { padding-left:20px; padding-right:20px; }
+.py-1 { padding-top:4px; padding-bottom:4px; } .py-2 { padding-top:8px; padding-bottom:8px; } .py-3 { padding-top:12px; padding-bottom:12px; } .py-4 { padding-top:16px; padding-bottom:16px; } .py-6 { padding-top:24px; padding-bottom:24px; } .py-10 { padding-top:40px; padding-bottom:40px; }
+.pt-12 { padding-top:48px; } .pb-4 { padding-bottom:16px; } .pb-6 { padding-bottom:24px; } .pb-24 { padding-bottom:96px; }
+.mt-1 { margin-top:4px; } .mt-2 { margin-top:8px; } .mt-3 { margin-top:12px; } .mt-4 { margin-top:16px; }
+.mb-1 { margin-bottom:4px; } .mb-2 { margin-bottom:8px; } .mb-3 { margin-bottom:12px; } .mb-4 { margin-bottom:16px; }
+.mx-auto { margin-left:auto; margin-right:auto; }
+.w-full { width:100%; } .h-8 { height:32px; } .h-10 { height:40px; } .h-11 { height:44px; } .h-12 { height:48px; } .h-20 { height:80px; } .h-24 { height:96px; } .h-28 { height:112px; } .h-32 { height:128px; } .h-64 { height:256px; }
+.max-w-lg { max-width:400px; } .min-h-screen { min-height:100vh; } .max-w-180 { max-width:180px; }
+.w-2 { width:8px; } .w-3 { width:12px; } .w-4 { width:16px; } .w-6 { width:24px; } .w-7 { width:28px; } .w-8 { width:32px; } .w-10 { width:40px; } .w-12 { width:48px; }
+.h-2 { height:8px; } .h-4 { height:16px; } .h-6 { height:24px; }
+.bg-white { background: var(--card); } .bg-gray-50 { background: #f9fafb; } .bg-gray-100 { background: #f3f4f6; } .bg-gray-200 { background: #e5e7eb; }
+.bg-red-50 { background:#fef2f2; } .bg-red-600 { background:#dc2626; } .bg-red-100 { background:#fee2e2; }
+.bg-green-500 { background:#22c55e; } .bg-green-100 { background:#dcfce7; } .bg-green-400 { background:#4ade80; }
+.bg-blue-50 { background:#eff6ff; } .bg-blue-100 { background:#dbeafe; }
+.bg-purple-50 { background:#faf5ff; } .bg-purple-600 { background:#9333ea; } .bg-purple-100 { background:#f3e8ff; }
+.bg-yellow-100 { background:#fef9c3; } .bg-yellow-50 { background:#fefce8; }
+.bg-pink-100 { background:#fce7f3; }
+.bg-white\/10 { background:rgba(255,255,255,.1); } .bg-white\/20 { background:rgba(255,255,255,.2); } .bg-black\/50 { background:rgba(0,0,0,.5); }
+.text-white { color:#fff; } .text-gray-300 { color:#d1d5db; } .text-gray-400 { color: #9ca3af; } .text-gray-500 { color: #6b7280; } .text-gray-700 { color: #374151; } .text-gray-900 { color: #111827; }
+.text-red-600 { color:#dc2626; } .text-green-500 { color:#22c55e; } .text-green-600 { color:#16a34a; } .text-green-700 { color:#15803d; } .text-blue-600 { color:#2563eb; } .text-purple-600 { color:#9333ea; }
+.text-yellow-500 { color:#eab308; } .text-yellow-800 { color:#92400e; }
+.bg-gradient-to-b { background-image:linear-gradient(to bottom, var(--tw-gradient-from), var(--tw-gradient-to)); }
+.bg-gradient-to-r { background-image:linear-gradient(to right, var(--tw-gradient-from), var(--tw-gradient-to)); }
+.bg-gradient-to-br { background-image:linear-gradient(to bottom right, var(--tw-gradient-from), var(--tw-gradient-to)); }
+.from-red-600 { --tw-gradient-from:#dc2626; } .to-red-800 { --tw-gradient-to:#991b1b; } .from-red-50 { --tw-gradient-from:#fef2f2; } .to-red-100 { --tw-gradient-to:#fee2e2; }
+.text-center { text-align:center; } .text-left { text-align:left; } .text-right { text-align:right; }
+.text-\[10px\] { font-size:10px; line-height:14px; } .text-\[11px\] { font-size:11px; line-height:16px; } .text-\[9px\] { font-size:9px; }
+.text-xs { font-size:12px; line-height:16px; } .text-sm { font-size:14px; line-height:20px; } .text-base { font-size:16px; line-height:24px; } .text-lg { font-size:18px; line-height:28px; } .text-xl { font-size:20px; line-height:28px; } .text-2xl { font-size:24px; } .text-3xl { font-size:30px; } .text-4xl { font-size:36px; } .text-5xl { font-size:48px; }
+.font-medium { font-weight:500; } .font-semibold { font-weight:600; } .font-bold { font-weight:700; } .font-extrabold { font-weight:800; }
+.uppercase { text-transform:uppercase; } .tracking-wider { letter-spacing:.05em; } .opacity-70 { opacity:.7; } .opacity-80 { opacity:.8; } .opacity-90 { opacity:.9; }
+.cursor-pointer { cursor:pointer; } .hover\:bg-gray-50:hover { background:#f9fafb; }
+.outline-none { outline:none; } .whitespace-nowrap { white-space:nowrap; } .truncate { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.object-cover { object-fit: cover; }
+.bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; z-index: 50; background: var(--card); display: flex; justify-content: center; align-items: center; padding: 0 16px; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); }
+.bottom-nav-inner { max-width: 400px; width: 100%; display: flex; justify-content: space-evenly; align-items: center; height: 64px; }
+.nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 0; max-width: 80px; background: transparent !important; cursor: pointer; position: relative; }
+.nav-item .nav-badge { position: absolute; top: 4px; right: 8px; background: #dc2626; color: white; font-size: 9px; font-weight: 800; padding: 1px 5px; border-radius: 20px; min-width: 16px; text-align: center; }
+.back-button { color: white; opacity: 0.8; background: transparent; display: inline-flex; align-items: center; gap: 4px; font-size: 14px; margin-bottom: 16px; }
+.category-btn { background: var(--card) !important; color: #6b7280 !important; border-radius: 40px !important; border: 1px solid var(--border) !important; cursor: pointer; }
+.category-btn-active { background: linear-gradient(135deg, #dc2626, #b91c1c) !important; color: white !important; border-radius: 40px !important; }
+.category-btn-active span { color: white !important; }
+.profile-tabs-container { display: flex; gap: 6px; width: 100%; flex-wrap: wrap; }
+.profile-tab { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 12px 0; border-radius: 16px; cursor: pointer; min-width: 55px; }
+.profile-tab-active { background: white !important; color: #dc2626 !important; }
+.profile-tab-inactive { background: rgba(255,255,255,0.1) !important; color: white !important; }
+
+.store-card { background: var(--card); border-radius: 16px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.05); cursor: pointer; display: flex; flex-direction: column; width: 100%; transition: all 0.2s ease; }
+.store-card:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,0.1); }
+.store-card .store-banner { width: 100%; height: 90px; overflow: hidden; background: linear-gradient(135deg, #fef2f2, #fee2e2); display: flex; align-items: center; justify-content: center; position: relative; }
+.store-card .store-banner img { width: 100%; height: 100%; object-fit: cover; }
+.store-card .store-info { padding: 10px; display: flex; flex-direction: column; gap: 1px; }
+.store-card .store-info h3 { font-size: 13px; font-weight: 700; }
+.store-card .store-info p { font-size: 11px; }
+.store-card .store-info .store-meta { font-size: 10px; margin-top: 4px; display: flex; justify-content: space-between; align-items: center; }
+.fav-heart { position: absolute; top: 6px; right: 6px; width: 26px; height: 26px; background: rgba(255,255,255,0.95); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; cursor: pointer; z-index: 5; }
+#map { height: 320px; width: calc(100% - 32px); margin: 0 16px 20px 16px; border-radius: 24px; z-index: 1; box-shadow: 0 8px 25px rgba(0,0,0,0.1); overflow: hidden; }
+.featured-banner { margin: 16px; background: linear-gradient(135deg, #dc2626, #b91c1c, #991b1b); border-radius: 24px; padding: 20px; color: white; position: relative; overflow: hidden; cursor: pointer; }
+.banner-emoji { font-size: 48px; margin-bottom: 8px; display: inline-block; }
+.banner-tag { display: inline-block; background: rgba(255,255,255,0.2); padding: 4px 12px; border-radius: 30px; font-size: 10px; font-weight: bold; letter-spacing: 1px; margin-bottom: 12px; }
+.banner-title { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+.banner-desc { font-size: 12px; opacity: 0.9; margin-bottom: 16px; max-width: 70%; }
+.banner-button { display: inline-block; background: white; color: #dc2626; padding: 8px 20px; border-radius: 40px; font-size: 12px; font-weight: bold; }
+.store-header-red { background: linear-gradient(135deg, #dc2626, #b91c1c, #991b1b); padding: 20px 16px 24px 16px; border-radius: 0 0 28px 28px; color: white; }
+.product-item { background: var(--card); margin-bottom: 12px; border-radius: 16px; padding: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 12px; }
+.product-icon-frame { width: 48px; height: 48px; background: #fef2f2; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0; }
+.product-name { font-weight: 800; font-size: 15px; color: var(--text); margin-bottom: 4px; }
+.product-desc { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+.product-price { font-weight: 700; font-size: 15px; color: #dc2626; margin-bottom: 4px; }
+.product-stock { font-size: 11px; color: #9ca3af; margin-bottom: 6px; }
+.add-button { background: #dc2626; color: white; padding: 6px 14px; border-radius: 40px; font-size: 12px; font-weight: 600; cursor: pointer; }
+.quantity-control { display: flex; align-items: center; gap: 8px; background: #fef2f2; padding: 3px 10px; border-radius: 50px; width: fit-content; }
+.qty-btn { width: 28px; height: 28px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; color: #dc2626; cursor: pointer; }
+.qty-value { font-weight: 600; font-size: 14px; min-width: 24px; text-align: center; }
+.menu-header-simple { display: flex; justify-content: space-between; padding: 16px; background: var(--bg); }
+.products-container { padding: 0 16px 80px; background: var(--bg); }
+.auth-container { min-height: 100vh; display: flex; flex-direction: column; justify-content: center; padding: 24px; background: linear-gradient(135deg, #dc2626, #991b1b); }
+.auth-logo { text-align: center; margin-bottom: 32px; }
+.auth-logo span { font-size: 80px; display: inline-block; animation: pulse 2s infinite; }
+.auth-logo h1 { color: white; font-size: 32px; margin-top: 16px; font-weight: 800; }
+.auth-logo p { color: rgba(255,255,255,0.8); margin-top: 8px; }
+.auth-card { background: white; border-radius: 32px; padding: 32px 24px; }
+.auth-input { margin-bottom: 16px; } .auth-input label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; color: #374151; } .auth-input input { width: 100%; padding: 12px; background: #f1f5f9; border-radius: 16px; }
+.auth-btn { width: 100%; background: #dc2626; color: white; padding: 14px; border-radius: 40px; font-weight: 700; font-size: 16px; margin-top: 8px; cursor: pointer; }
+.auth-footer { text-align: center; margin-top: 20px; font-size: 14px; color: #64748b; } .auth-footer button { color: #dc2626; font-weight: 600; background: none; cursor: pointer; }
+.social-divider { display: flex; align-items: center; margin: 20px 0; gap: 12px; } .social-divider::before, .social-divider::after { content: ''; flex: 1; height: 1px; background: #e5e7eb; } .social-divider span { font-size: 13px; color: #9ca3af; }
+.social-buttons { display: flex; flex-direction: column; gap: 10px; }
+.social-btn { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 12px; border-radius: 40px; font-weight: 600; font-size: 14px; cursor: pointer; background: white; }
+.pwd-wrap { position: relative; }
+.pwd-wrap input { padding-right: 44px !important; }
+.pwd-toggle { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; cursor: pointer; font-size: 18px; color: #6b7280; padding: 4px; line-height: 1; z-index: 2; -webkit-tap-highlight-color: transparent; }
+.pwd-toggle:active { transform: translateY(-50%) scale(0.9); }
+.chat-header { background: linear-gradient(135deg, #dc2626, #b91c1c); padding: 16px 20px; padding-top: 48px; display: flex; align-items: center; gap: 12px; color: white; border-radius: 0 0 24px 24px; }
+.chat-header.purple { background: linear-gradient(135deg, #9333ea, #6d28d9); }
+.chat-header.blue { background: linear-gradient(135deg, #2563eb, #1e40af); }
+.chat-header .back-btn { font-size: 24px; cursor: pointer; background: none; color: white; padding: 4px; }
+.chat-header .avatar { width: 44px; height: 44px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+.chat-header .info { flex: 1; } .chat-header .info h3 { font-size: 18px; font-weight: 700; margin: 0; } .chat-header .info p { font-size: 12px; opacity: 0.8; margin: 0; }
+.chat-messages-area { flex: 1; overflow-y: auto; padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; background: var(--bg); }
+.chat-messages-area .msg { max-width: 80%; padding: 10px 14px; border-radius: 18px; font-size: 14px; white-space: pre-line; }
+.chat-messages-area .msg-user { align-self: flex-end; background: #dc2626; color: white; border-bottom-right-radius: 4px; }
+.chat-messages-area .msg-bot { align-self: flex-start; background: var(--card); color: var(--text); border-bottom-left-radius: 4px; }
+.chat-input-area { background: var(--card); padding: 12px 20px 20px; display: flex; gap: 12px; align-items: center; }
+.chat-input-area input { flex: 1; height: 44px; padding: 0 16px; border-radius: 40px !important; background: #f3f4f6 !important; font-size: 14px; }
+.chat-input-area .send-btn { width: 44px; height: 44px; background: #dc2626; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; cursor: pointer; }
+.typing-indicator { align-self: flex-start; background: var(--card); padding: 10px 16px; border-radius: 20px; display: flex; gap: 4px; }
+.typing-indicator span { width: 8px; height: 8px; background: #9ca3af; border-radius: 50%; animation: bdot 1.4s infinite; }
+.typing-indicator span:nth-child(2) { animation-delay: 0.15s; } .typing-indicator span:nth-child(3) { animation-delay: 0.3s; }
+.chat-list-item { background: var(--card); border-radius: 16px; padding: 14px; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; cursor: pointer; }
+.chat-list-item .avatar { width: 48px; height: 48px; background: #fef2f2; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0; }
+.chat-list-item .avatar.purple { background: #f3e8ff; } .chat-list-item .avatar.blue { background: #dbeafe; }
+.chat-list-item .info { flex: 1; min-width: 0; } .chat-list-item .info .name { font-weight: 700; font-size: 15px; } .chat-list-item .info .last-msg { font-size: 13px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.chat-list-item .badge { background: #dc2626; color: white; font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 30px; }
+.permission-modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.permission-card { background: var(--card); border-radius: 32px; padding: 28px 22px; max-width: 340px; width: 100%; text-align: center; max-height: 90vh; overflow-y: auto; }
+.permission-icon { font-size: 56px; margin-bottom: 12px; display: inline-block; }
+.permission-title { font-size: 20px; font-weight: 800; margin-bottom: 8px; }
+.permission-desc { font-size: 14px; color: var(--muted); margin-bottom: 20px; }
+.permission-buttons { display: flex; gap: 12px; justify-content: center; }
+.permission-btn { padding: 12px 24px; border-radius: 40px; font-weight: 600; font-size: 14px; cursor: pointer; }
+.permission-btn-primary { background: #dc2626; color: white; } .permission-btn-secondary { background: #f3f4f6; color: #4b5563; }
+.search-container { position: relative; width: 100%; }
+.search-icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); font-size: 18px; color: #9ca3af; pointer-events: none; z-index: 1; }
+.search-input { width: 100%; padding-left: 44px !important; padding-right: 16px !important; height: 44px; background: white !important; border-radius: 30px !important; font-size: 14px; }
+.store-grid-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; padding-bottom: 16px; }
+.empty-state-full { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; min-height: 50vh; padding: 48px 24px; background: var(--card); border-radius: 24px; }
+.empty-emoji { font-size: 80px; margin-bottom: 20px; opacity: 0.8; }
+.empty-title { font-size: 18px; font-weight: 800; margin-bottom: 12px; }
+.empty-button { background: linear-gradient(135deg, #dc2626, #b91c1c); color: white; padding: 12px 28px; border-radius: 40px; font-size: 14px; font-weight: 600; cursor: pointer; }
+.header-badge { display: inline-flex; align-items: center; gap: 4px; background: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 30px; font-size: 10px; font-weight: 600; }
+.header-badge-green { background: #22c55e; color: white; } .header-badge-gray { background: #6b7280; color: white; }
+.lojista-store-card { background: var(--card); border-radius: 16px; padding: 14px; cursor: pointer; }
+.back-btn-card { display: inline-flex; align-items: center; gap: 6px; color: #dc2626; font-weight: 600; font-size: 14px; cursor: pointer; background: none; margin-bottom: 16px; }
+.product-card { background: var(--card); border-radius: 12px; padding: 12px 14px; display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.switch-container { display: flex; align-items: center; gap: 12px; padding: 4px 0; }
+.switch { position: relative; display: inline-block; width: 48px; height: 26px; flex-shrink: 0; } .switch input { opacity: 0; width: 0; height: 0; }
+.slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .3s; border-radius: 26px; }
+.slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
+input:checked + .slider { background-color: #dc2626; } input:checked + .slider:before { transform: translateX(22px); }
+#notif-panel-global { position: fixed; top: 70px; right: 16px; width: 320px; max-width: calc(100% - 32px); background: var(--card); border-radius: 16px; box-shadow: 0 8px 30px rgba(0,0,0,0.2); z-index: 9999; overflow: hidden; display: none; }
+#notif-panel-global .notif-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--border); }
+.order-status-badge { font-size: 10px; font-weight: 700; padding: 4px 10px; border-radius: 30px; text-transform: uppercase; }
+.order-status-pendente { background: #fef3c7; color: #92400e; } .order-status-preparando { background: #dbeafe; color: #1e40af; }
+.order-status-saiu { background: #d1fae5; color: #065f46; } .order-status-entregue { background: #d1fae5; color: #065f46; } .order-status-cancelado { background: #fee2e2; color: #991b1b; }
+.entregador-tab-btn { width: 100%; padding: 14px; border-radius: 40px; font-weight: 700; font-size: 15px; cursor: pointer; background: linear-gradient(135deg, #7c3aed, #6d28d9); color: white; margin-top: 8px; }
+.delivery-card { background: var(--card); border-radius: 16px; padding: 14px; margin-bottom: 10px; }
+.music-item { background: var(--card); border-radius: 14px; padding: 12px 14px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; cursor: pointer; border: 2px solid transparent; }
+.music-item.playing { background: linear-gradient(135deg, #9333ea, #6d28d9); color: white; border-color: #9333ea; }
+.music-icon { width: 40px; height: 40px; background: #f3e8ff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+.music-item.playing .music-icon { background: rgba(255,255,255,0.2); }
+.music-meta { font-size: 11px; color: #9ca3af; }
+.music-mini-player { position: fixed; bottom: 74px; left: 50%; transform: translateX(-50%); width: calc(100% - 2rem); max-width: calc(400px - 2rem); background: linear-gradient(135deg, #9333ea, #6d28d9); color: white; padding: 10px 14px; border-radius: 14px; display: flex; align-items: center; gap: 10px; z-index: 41; }
+.admin-tab-btn { padding: 10px 14px; border-radius: 30px; font-size: 12px; font-weight: 700; cursor: pointer; flex: 1; text-align: center; }
+.admin-tab-active { background: #dc2626; color: white; } .admin-tab-inactive { background: #e5e7eb; color: #374151; }
+.music-wave { display: inline-flex; gap: 2px; align-items: center; height: 14px; }
+.music-wave span { width: 2px; height: 8px; background: white; border-radius: 1px; animation: musicWave 0.8s ease-in-out infinite; }
+.music-wave span:nth-child(2) { animation-delay: 0.1s; height: 12px; } .music-wave span:nth-child(3) { animation-delay: 0.2s; height: 6px; } .music-wave span:nth-child(4) { animation-delay: 0.3s; height: 10px; }
+.cart-bar-wrapper { position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%); z-index: 40; width: calc(100% - 2rem); max-width: calc(400px - 2rem); transition: bottom 0.3s ease; }
+body.music-playing .cart-bar-wrapper { bottom: 145px; }
+.action-panel { background: var(--card); border-top: 1px solid var(--border); padding: 8px 12px; display: flex; gap: 6px; overflow-x: auto; }
+.action-btn { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 12px; border-radius: 14px; background: #f9fafb; cursor: pointer; flex-shrink: 0; min-width: 66px; }
+.action-btn .icon { font-size: 18px; } .action-btn .label { font-size: 9px; font-weight: 700; color: #374151; text-transform: uppercase; }
+.review-card { background: var(--card); border-radius: 14px; padding: 14px; margin-bottom: 10px; }
+.stars-input { display: flex; gap: 8px; justify-content: center; margin: 16px 0; }
+.stars-input .star { font-size: 40px; cursor: pointer; opacity: 0.3; transition: all 0.15s; }
+.stars-input .star.active { opacity: 1; transform: scale(1.1); }
+.coupon-input { display: flex; gap: 8px; margin-top: 8px; }
+.coupon-input input { flex: 1; height: 44px; padding: 0 14px; border-radius: 12px; background: var(--bg); font-size: 14px; text-transform: uppercase; font-weight: 700; }
+.coupon-input button { padding: 0 20px; background: #16a34a; color: white; font-weight: 700; border-radius: 12px; cursor: pointer; }
+.coupon-applied { background: #dcfce7; border-radius: 12px; padding: 10px 14px; display: flex; justify-content: space-between; align-items: center; margin-top: 8px; color: #15803d; font-weight: 600; font-size: 13px; }
+.stat-card { background: var(--card); border-radius: 14px; padding: 14px; text-align: center; }
+.stat-value { font-size: 20px; font-weight: 800; color: #dc2626; margin-bottom: 4px; }
+.stat-label { font-size: 10px; color: var(--muted); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; }
+.tracking-marker { animation: pulse 1.5s infinite; }
+.option-item { display: flex; align-items: center; justify-content: space-between; padding: 12px; background: var(--bg); border-radius: 12px; margin-bottom: 8px; cursor: pointer; border: 2px solid transparent; }
+.option-item.selected { border-color: #dc2626; background: #fef2f2; }
+.dark-toggle { width: 44px; height: 24px; background: rgba(255,255,255,0.2); border-radius: 20px; position: relative; cursor: pointer; }
+.dark-toggle::after { content: '☀️'; position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; background: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; transition: all 0.3s; }
+body.dark .dark-toggle::after { content: '🌙'; left: 22px; }
+
+/* ===== FIX CHAT IA / MÚSICA ===== */
+#chat-ai-view, #music-view {
+  display: flex; flex-direction: column; position: fixed; top: 0; left: 50%; transform: translateX(-50%);
+  width: 100%; max-width: 400px; bottom: 64px; background: var(--bg); z-index: 45; overflow: hidden;
+}
+#chat-ai-view .chat-messages-area, #music-view .chat-messages-area { flex: 1; overflow-y: auto; min-height: 0; }
+#chat-ai-view .chat-header, #music-view .chat-header { flex-shrink: 0; }
+#chat-ai-view .chat-input-area, #chat-ai-view .action-panel, #music-view > div { flex-shrink: 0; }
+/* ===== FIM FIX ===== */
+</style>
+</head>
+<body>
+<div id="toast-container"></div>
+<audio id="bg-audio" loop></audio>
+
+<div id="location-modal" class="permission-modal" style="display: none;"><div class="permission-card"><div class="permission-icon">📍</div><div class="permission-title">Compartilhar localização</div><div class="permission-desc">Para encontrar lojas próximas</div><div class="permission-buttons"><button class="permission-btn permission-btn-secondary" onclick="denyLocation()">Agora não</button><button class="permission-btn permission-btn-primary" onclick="allowLocation()">Permitir</button></div></div></div>
+<div id="notif-modal" class="permission-modal" style="display: none;"><div class="permission-card"><div class="permission-icon">🔔</div><div class="permission-title">Receber notificações</div><div class="permission-desc">Fique sabendo sobre novos pedidos</div><div class="permission-buttons"><button class="permission-btn permission-btn-secondary" onclick="denyNotification()">Agora não</button><button class="permission-btn permission-btn-primary" onclick="allowNotification()">Permitir</button></div></div></div>
+
+<div id="delivery-code-modal" class="permission-modal" style="display:none;">
+  <div class="permission-card">
+    <div class="permission-icon">🔑</div><div class="permission-title">Confirmar entrega</div>
+    <div class="permission-desc">Peça ao cliente o código de 4 dígitos</div>
+    <input type="text" id="delivery-code-input" maxlength="4" inputmode="numeric" placeholder="0000" style="text-align:center; font-size:36px; letter-spacing:14px; width:100%; padding:16px 8px; border-radius:16px; background:#f5f5f5; font-weight:900; margin-bottom:8px; color:#111827;" />
+    <div id="delivery-code-error" style="color:#dc2626; font-size:12px; margin-bottom:12px; display:none; font-weight:600;"></div>
+    <div class="permission-buttons"><button class="permission-btn permission-btn-secondary" onclick="closeDeliveryCodeModal()">Cancelar</button><button class="permission-btn permission-btn-primary" onclick="validateDeliveryCode()">Confirmar</button></div>
+  </div>
+</div>
+
+<div id="entregador-login-modal" class="permission-modal" style="display:none;">
+  <div class="permission-card">
+    <div class="permission-icon">🏍️</div><div class="permission-title">Sou Entregador</div>
+    <div class="permission-desc">Digite o telefone cadastrado pela loja</div>
+    <input type="tel" id="entregador-phone-input" placeholder="(11) 99999-9999" style="width:100%; padding:14px; border-radius:16px; background:#f5f5f5; font-size:16px; text-align:center; margin-bottom:8px;" />
+    <div id="entregador-login-error" style="color:#dc2626; font-size:12px; margin-bottom:12px; display:none; font-weight:600;"></div>
+    <div class="permission-buttons"><button class="permission-btn permission-btn-secondary" onclick="closeEntregadorLogin()">Cancelar</button><button class="permission-btn permission-btn-primary" onclick="loginAsEntregador()">Entrar</button></div>
+  </div>
+</div>
+
+<div id="add-music-modal" class="permission-modal" style="display:none;">
+  <div class="permission-card" style="max-width: 380px;">
+    <div class="permission-icon">🎵</div><div class="permission-title">Adicionar Música</div>
+    <div class="permission-desc">Envie um arquivo MP3 e preencha as informações</div>
+    <div style="text-align:left; margin-bottom:12px;">
+      <label for="music-file-input" id="music-file-label" style="display:flex; align-items:center; gap:10px; padding:14px; background:#faf5ff; border:2px dashed #9333ea; border-radius:14px; cursor:pointer;">
+        <span style="font-size:24px;">📁</span>
+        <div style="flex:1; min-width:0;"><p style="font-size:13px; font-weight:600; color:#9333ea; margin:0;" id="music-file-name">Toque para escolher um MP3</p><p style="font-size:10px; color:#9ca3af; margin:0;">MP3, WAV ou OGG · máx 15MB</p></div>
+      </label>
+      <input type="file" id="music-file-input" accept="audio/*" style="display:none;" onchange="onMusicFileSelected(this)" />
+    </div>
+    <div id="music-preview" style="display:none; margin-bottom:12px; background:#f5f5f5; border-radius:12px; padding:10px;"><audio id="music-preview-audio" controls style="width:100%; height:36px;"></audio></div>
+    <div style="text-align:left; margin-bottom:10px;"><input type="text" id="music-title-input" placeholder="Título" maxlength="80" style="width:100%; padding:12px; border-radius:12px; background:#f5f5f5; font-size:14px;" /></div>
+    <div style="text-align:left; margin-bottom:16px;"><input type="text" id="music-artist-input" placeholder="Artista" maxlength="80" style="width:100%; padding:12px; border-radius:12px; background:#f5f5f5; font-size:14px;" /></div>
+    <div id="music-upload-error" style="color:#dc2626; font-size:12px; margin-bottom:12px; display:none; font-weight:600; text-align:center;"></div>
+    <div id="music-upload-progress" style="display:none; margin-bottom:12px;"><div style="height:6px; background:#e5e7eb; border-radius:20px; overflow:hidden;"><div id="music-progress-bar" style="height:100%; background:linear-gradient(90deg,#9333ea,#6d28d9); width:0%; transition:width 0.3s;"></div></div></div>
+    <div class="permission-buttons"><button class="permission-btn permission-btn-secondary" onclick="closeAddMusicModal()">Cancelar</button><button class="permission-btn" id="music-upload-btn" onclick="confirmUploadMusic()" style="background:linear-gradient(135deg,#9333ea,#6d28d9); color:white;">Enviar música</button></div>
+  </div>
+</div>
+
+<div id="review-modal" class="permission-modal" style="display:none;">
+  <div class="permission-card">
+    <div class="permission-icon">⭐</div><div class="permission-title">Avaliar pedido</div>
+    <div class="permission-desc" id="review-store-name">Como foi sua experiência?</div>
+    <div class="stars-input" id="stars-input">
+      <span class="star" data-val="1">⭐</span><span class="star" data-val="2">⭐</span><span class="star" data-val="3">⭐</span><span class="star" data-val="4">⭐</span><span class="star" data-val="5">⭐</span>
+    </div>
+    <textarea id="review-comment" placeholder="Comentário (opcional)" class="w-full h-20 px-3 py-2 text-sm resize-none rounded-2xl" style="background:var(--bg) !important; color:var(--text) !important;"></textarea>
+    <div class="permission-buttons" style="margin-top:16px;"><button class="permission-btn permission-btn-secondary" onclick="closeReviewModal()">Cancelar</button><button class="permission-btn permission-btn-primary" onclick="submitReview()">Enviar</button></div>
+  </div>
+</div>
+
+<div id="options-modal" class="permission-modal" style="display:none;">
+  <div class="permission-card" style="max-width: 380px;">
+    <div class="permission-icon" id="options-emoji">🍔</div>
+    <div class="permission-title" id="options-name">Produto</div>
+    <div class="permission-desc" id="options-desc">Escolha os adicionais</div>
+    <div id="options-list" style="text-align:left; max-height: 260px; overflow-y: auto;"></div>
+    <div style="font-weight: 800; font-size: 18px; color: #dc2626; margin: 12px 0;" id="options-total">R$ 0,00</div>
+    <div class="permission-buttons"><button class="permission-btn permission-btn-secondary" onclick="closeOptionsModal()">Cancelar</button><button class="permission-btn permission-btn-primary" onclick="confirmOptions()">Adicionar</button></div>
+  </div>
+</div>
+
+<div id="coupon-modal" class="permission-modal" style="display:none;">
+  <div class="permission-card">
+    <div class="permission-icon">🏷️</div><div class="permission-title">Novo Cupom</div>
+    <div class="permission-desc">Crie um cupom de desconto</div>
+    <div style="text-align:left;">
+      <input type="text" id="coupon-code" placeholder="CODIGO" maxlength="20" style="width:100%; padding:12px; border-radius:12px; background:var(--bg); font-size:14px; text-transform:uppercase; font-weight:700; margin-bottom:8px; color:var(--text) !important;" />
+      <div class="flex gap-2 mb-2">
+        <select id="coupon-type" class="flex-1 h-10 px-3 text-sm rounded-xl" style="background:var(--bg); color:var(--text);"><option value="percent">% Desconto</option><option value="fixed">R$ Fixo</option></select>
+        <input type="number" id="coupon-value" placeholder="Valor" step="0.01" min="0" class="flex-1 h-10 px-3 text-sm rounded-xl" style="background:var(--bg); color:var(--text);" />
+      </div>
+      <input type="number" id="coupon-min" placeholder="Pedido mínimo (R$)" step="0.01" min="0" value="0" class="w-full h-10 px-3 text-sm rounded-xl mb-2" style="background:var(--bg); color:var(--text);" />
+      <input type="number" id="coupon-max-uses" placeholder="Máx usos" min="1" value="100" class="w-full h-10 px-3 text-sm rounded-xl" style="background:var(--bg); color:var(--text);" />
+    </div>
+    <div class="permission-buttons" style="margin-top:16px;"><button class="permission-btn permission-btn-secondary" onclick="closeCouponModal()">Cancelar</button><button class="permission-btn permission-btn-primary" onclick="saveCoupon()">Criar</button></div>
+  </div>
+</div>
+
+<div id="auth-container" class="auth-container">
+  <div class="auth-logo"><span>🛵</span><h1>Delivery app</h1><p>tudo perto de vc</p></div>
+  <div class="auth-card">
+    <div id="auth-login-form">
+      <div class="auth-input"><label>E-mail</label><input type="email" id="login-email" placeholder="seu@email.com" /></div>
+      <div class="auth-input">
+        <label>Senha</label>
+        <div class="pwd-wrap">
+          <input type="password" id="login-password" placeholder="••••••••" />
+          <button type="button" class="pwd-toggle" onclick="togglePassword('login-password', this)" aria-label="Mostrar senha">🔒</button>
+        </div>
+      </div>
+      <div class="text-right mt-1"><button onclick="resetPassword()" class="text-red-600 text-xs font-semibold" style="background:none; cursor:pointer; text-decoration:underline;">Esqueceu a senha?</button></div>
+      <button id="login-btn" class="auth-btn">Entrar</button>
+      <div class="social-divider"><span>ou continue com</span></div>
+      <div class="social-buttons">
+        <button id="google-btn" class="social-btn" style="color:#ea4335;">🔍 Google</button>
+        <button id="facebook-btn" class="social-btn" style="color:#1877f2;">📘 Facebook</button>
+        <button id="phone-btn" class="social-btn" style="color:#059669;">📱 Telefone</button>
+        <button id="entregador-login-btn" class="entregador-tab-btn" onclick="openEntregadorLogin()">🏍️ Sou Entregador</button>
+      </div>
+      <div class="auth-footer">Não tem conta? <button id="show-register-btn">Cadastre-se</button></div>
+    </div>
+    <div id="auth-register-form" style="display: none;">
+      <div class="auth-input"><label>Nome</label><input type="text" id="register-name" placeholder="Seu nome" /></div>
+      <div class="auth-input"><label>E-mail</label><input type="email" id="register-email" placeholder="seu@email.com" /></div>
+      <div class="auth-input">
+        <label>Senha</label>
+        <div class="pwd-wrap">
+          <input type="password" id="register-password" placeholder="••••••••" />
+          <button type="button" class="pwd-toggle" onclick="togglePassword('register-password', this)" aria-label="Mostrar senha">🔒</button>
+        </div>
+      </div>
+      <button id="register-btn" class="auth-btn">Criar conta</button>
+      <div class="auth-footer">Já tem conta? <button id="show-login-btn">Fazer login</button></div>
+    </div>
+  </div>
+</div>
+
+<div id="app-main" class="max-w-lg mx-auto min-h-screen relative" style="display: none;">
+  <div id="page-home" class="page active pb-24">
+    <div class="bg-gradient-to-b from-red-600 to-red-800 text-white px-4 pt-12 pb-8" style="border-radius: 0 0 24px 24px;">
+      <div class="flex items-center justify-between mb-1">
+        <div><p class="text-sm opacity-90" id="greeting-text">Bom dia! 👋</p><h1 class="text-xl font-extrabold">O que você quer pedir?</h1></div>
+        <div class="flex items-center gap-2"><div class="dark-toggle" onclick="toggleDarkMode()" title="Modo escuro"></div></div>
+      </div>
+      <div class="relative mt-4"><div class="search-container"><span class="search-icon">🔍</span><input id="search-input" type="text" placeholder="Buscar lojas..." oninput="renderStoreGrid()" class="search-input" /></div></div>
+    </div>
+    <div id="featured-banner"></div>
+    <div id="favorites-section"></div>
+    <div class="flex gap-2 overflow-x-auto py-3 px-4 scrollbar-hide" id="category-filter"></div>
+    <div class="px-4 mt-2"><div class="flex items-center justify-between mb-3"><h2 class="font-bold text-base">Todas as lojas</h2><span class="text-xs text-gray-400" id="store-count">0 encontradas</span></div><div id="store-grid"></div></div>
+    <div id="cart-bar-home"></div>
+  </div>
+  <div id="page-store" class="page pb-24"><div id="store-detail-content"></div><div id="cart-bar-store"></div></div>
+  <div id="page-checkout" class="page pb-24">
+    <div class="bg-gradient-to-b from-red-600 to-red-800 text-white px-4 pt-12 pb-6" style="border-radius: 0 0 24px 24px;"><button onclick="goBack()" class="back-button">← Voltar</button><h1 class="text-xl font-extrabold">🛒 Finalizar pedido</h1></div>
+    <div id="checkout-content" class="px-4 mt-4 space-y-4"></div>
+    <div class="px-4 pb-8" style="margin-top: 20px;"><button id="confirm-btn" onclick="confirmOrder()" class="w-full h-12 bg-red-600 text-white font-bold rounded-2xl" style="display: none;">Confirmar</button></div>
+  </div>
+  <div id="page-orders" class="page pb-24">
+    <div class="bg-gradient-to-b from-red-600 to-red-800 text-white px-4 pt-12 pb-6" style="border-radius: 0 0 24px 24px;"><button onclick="goBack()" class="back-button">← Voltar</button><h1 class="text-xl font-extrabold">📋 Meus Pedidos</h1></div>
+    <div id="orders-list" class="px-4 mt-4 space-y-3"></div>
+  </div>
+  <div id="page-tracking" class="page pb-24">
+    <div class="bg-gradient-to-b from-red-600 to-red-800 text-white px-4 pt-12 pb-6" style="border-radius: 0 0 24px 24px;"><button onclick="goBack()" class="back-button">← Voltar</button><h1 class="text-xl font-extrabold">🛵 Rastrear entrega</h1><p class="text-xs opacity-80 mt-1" id="tracking-status">Aguardando...</p></div>
+    <div id="tracking-map" style="height: 380px; width: calc(100% - 32px); margin: 16px; border-radius: 24px; z-index: 1; box-shadow: 0 8px 25px rgba(0,0,0,0.1);"></div>
+    <div id="tracking-info" class="px-4"></div>
+  </div>
+  <div id="page-mapa" class="page pb-24">
+    <div class="bg-gradient-to-b from-red-600 to-red-800 text-white px-4 pt-12 pb-6" style="border-radius: 0 0 24px 24px;"><button onclick="goBack()" class="back-button">← Voltar</button><h1 class="text-xl font-extrabold">🗺️ Mapa</h1></div>
+    <div id="map" class="mt-4"></div>
+    <div class="px-4"><input id="map-search" type="text" placeholder="Buscar no mapa..." oninput="renderMapList()" class="w-full h-10 px-3 text-sm rounded-2xl" style="background:var(--card) !important" /></div>
+    <div id="map-list" class="px-4 mt-4 space-y-2"></div>
+  </div>
+  <div id="page-chat" class="page pb-24">
+    <div id="chat-list-view">
+      <div class="bg-gradient-to-b from-red-600 to-red-800 text-white px-4 pt-12 pb-6" style="border-radius: 0 0 24px 24px;">
+        <div class="flex items-center justify-between"><h1 class="text-xl font-extrabold">💬 Mensagens</h1><div class="relative" id="notif-bell-wrap"><button onclick="toggleNotifPanel()" class="relative p-2 bg-white/20 rounded-full"><span class="text-lg">🔔</span><span id="notif-badge" style="display:none" class="absolute -top-0.5 -right-0.5 w-4 h-4 bg-yellow-400 text-black text-[9px] font-extrabold rounded-full flex items-center justify-center">0</span></button></div></div>
+      </div>
+      <div class="px-4 mt-4">
+        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">Assistentes IA</p>
+        <div class="chat-list-item" onclick="openAIChat()"><div class="avatar">🤖</div><div class="info"><div class="name">Suporte Delivery app IA</div><div class="last-msg">Assistente inteligente 24/7</div></div><span class="badge">Online</span></div>
+        <div class="chat-list-item" onclick="openMusicChat()"><div class="avatar purple">🎵</div><div class="info"><div class="name">IA Musical</div><div class="last-msg">Playlist para ouvir enquanto navega</div></div></div>
+        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mt-6 mb-2">Minhas conversas</p>
+        <div id="chats-list-container"></div>
+      </div>
+    </div>
+    <div id="chat-ai-view" style="display: none;">
+      <div class="chat-header"><button class="back-btn" onclick="closeAIChat()">←</button><div class="avatar">🤖</div><div class="info"><h3>Suporte Delivery app</h3><p>Online agora</p></div></div>
+      <div id="chat-messages-area" class="chat-messages-area">
+        <div class="msg msg-bot"><span style="font-weight:600;color:#dc2626;">🤖:</span> Olá! Use os botões abaixo 👇</div>
+      </div>
+      <div class="action-panel">
+        <button class="action-btn" onclick="sendChatMsg('Como rastrear meu pedido?')"><span class="icon">📦</span><span class="label">Rastrear</span></button>
+        <button class="action-btn" onclick="sendChatMsg('Como criar uma loja?')"><span class="icon">🏪</span><span class="label">Loja</span></button>
+        <button class="action-btn" onclick="sendChatMsg('Formas de pagamento')"><span class="icon">💳</span><span class="label">Pagto</span></button>
+        <button class="action-btn" onclick="sendChatMsg('Como funciona a entrega segura?')"><span class="icon">🛡️</span><span class="label">Entrega</span></button>
+        <button class="action-btn" onclick="sendChatMsg('Como cancelar um pedido?')"><span class="icon">❌</span><span class="label">Cancelar</span></button>
+        <button class="action-btn" onclick="sendChatMsg('Código de entrega')"><span class="icon">🔑</span><span class="label">Código</span></button>
+        <button class="action-btn" onclick="sendChatMsg('Quero ser entregador')"><span class="icon">🏍️</span><span class="label">Entregador</span></button>
+      </div>
+      <div class="chat-input-area"><input id="chat-input" type="text" placeholder="Digite..." onkeypress="if(event.key==='Enter')sendChatFromInput()" /><button class="send-btn" onclick="sendChatFromInput()">➤</button></div>
+    </div>
+    <div id="music-view" style="display:none;">
+      <div class="chat-header purple"><button class="back-btn" onclick="closeMusicChat()">←</button><div class="avatar">🎵</div><div class="info"><h3>IA Musical</h3><p id="music-status">Escolha uma música</p></div></div>
+      <div class="chat-messages-area"><div id="music-list-container"></div></div>
+      <div id="music-now-playing" class="now-playing" style="display:none;background:rgba(147,51,234,0.15);padding:10px 16px;align-items:center;gap:10px;color:var(--text);font-size:12px;">
+        <div class="music-wave"><span style="background:#9333ea;"></span><span style="background:#9333ea;"></span><span style="background:#9333ea;"></span></div>
+        <div class="flex-1 min-w-0"><p class="text-xs font-bold truncate" id="music-current-title">—</p><p class="text-[10px] opacity-80 truncate" id="music-current-artist">—</p></div>
+      </div>
+      <div style="background: linear-gradient(135deg, #9333ea, #6d28d9); color: white; padding: 16px; display: flex; align-items: center; justify-content: center; gap: 14px;">
+        <button onclick="toggleShuffle()" id="btn-shuffle" style="width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,0.15);color:white;font-size:20px;cursor:pointer;">🔀</button>
+        <button onclick="prevMusic()" style="width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,0.15);color:white;font-size:20px;cursor:pointer;">⏮</button>
+        <button onclick="togglePlayPause()" id="btn-play-pause" style="width:60px;height:60px;border-radius:50%;background:white;color:#9333ea;font-size:26px;cursor:pointer;font-weight:bold;">▶</button>
+        <button onclick="nextMusic()" style="width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,0.15);color:white;font-size:20px;cursor:pointer;">⏭</button>
+        <button onclick="toggleRepeat()" id="btn-repeat" style="width:48px;height:48px;border-radius:50%;background:rgba(255,255,255,0.15);color:white;font-size:20px;cursor:pointer;">🔁</button>
+      </div>
+      <div style="padding: 8px 16px 16px; background: linear-gradient(135deg, #9333ea, #6d28d9);">
+        <button onclick="stopMusic()" style="width:100%;height:44px;background:#dc2626;color:white;font-weight:bold;border-radius:40px;font-size:14px;cursor:pointer;">⏹ Parar</button>
+      </div>
+    </div>
+    <div id="chat-conversation-view" style="position:fixed;top:0;left:50%;transform:translateX(-50%);width:100%;max-width:400px;bottom:64px;background:var(--bg);z-index:100;display:none;flex-direction:column;">
+      <div class="chat-header blue"><button class="back-btn" onclick="closeConversation()">←</button><div class="avatar" id="conv-avatar">🏪</div><div class="info"><h3 id="conv-name">Loja</h3><p id="conv-status">Online</p></div></div>
+      <div id="conv-messages" class="chat-messages-area"></div>
+      <div class="chat-input-area"><input id="conv-input" type="text" placeholder="Digite..." onkeypress="if(event.key==='Enter')sendConvMessage()" /><button class="send-btn" onclick="sendConvMessage()">➤</button></div>
+    </div>
+  </div>
+  <div id="page-perfil" class="page pb-24">
+    <div id="profile-view" style="display:none">
+      <div class="bg-gradient-to-b from-red-600 to-red-800 text-white px-4 pt-12 pb-6" style="border-radius: 0 0 24px 24px;">
+        <div class="flex items-center justify-between mb-4">
+          <div class="flex items-center gap-3"><div class="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center text-2xl" id="profile-avatar">👤</div><div><h2 class="font-extrabold text-lg" id="profile-name">Usuário</h2><p class="text-xs opacity-80" id="profile-email"></p></div></div>
+          <button onclick="handleLogout()" class="p-2 hover:bg-white/10 rounded-full text-xl">🚪</button>
+        </div>
+        <div class="profile-tabs-container" id="profile-tabs">
+          <button onclick="setProfileTab('cliente')" id="tab-btn-cliente" class="profile-tab profile-tab-active"><span class="text-xl">🛒</span><span class="text-[10px] font-bold">Cliente</span></button>
+          <button onclick="setProfileTab('lojista')" id="tab-btn-lojista" class="profile-tab profile-tab-inactive"><span class="text-xl">🏪</span><span class="text-[10px] font-bold">Lojista</span></button>
+          <button onclick="setProfileTab('entregador')" id="tab-btn-entregador" class="profile-tab profile-tab-inactive" style="display:none;"><span class="text-xl">🏍️</span><span class="text-[10px] font-bold">Entreg.</span></button>
+          <button onclick="setProfileTab('admin')" id="tab-btn-admin" class="profile-tab profile-tab-inactive" style="display: none;"><span class="text-xl">🛡️</span><span class="text-[10px] font-bold">Admin</span></button>
+          <button onclick="setProfileTab('sobre')" id="tab-btn-sobre" class="profile-tab profile-tab-inactive"><span class="text-xl">💡</span><span class="text-[10px] font-bold">Sobre</span></button>
+        </div>
+      </div>
+      <div id="profile-tab-content" class="px-4 mt-4 space-y-4"></div>
+    </div>
+  </div>
+  <nav class="bottom-nav">
+    <div class="bottom-nav-inner">
+      <button onclick="navigate('home')" id="nav-home" class="nav-item text-red-600"><span class="text-xl">🏠</span><span class="text-[11px] font-medium">Lojas</span></button>
+      <button onclick="navigate('mapa')" id="nav-mapa" class="nav-item text-gray-400"><span class="text-xl">🗺️</span><span class="text-[11px] font-medium">Mapa</span></button>
+      <button onclick="navigate('chat')" id="nav-chat" class="nav-item text-gray-400"><span class="text-xl">💬</span><span class="text-[11px] font-medium">Chat</span><span id="nav-chat-badge" class="nav-badge" style="display:none;">0</span></button>
+      <button onclick="navigate('perfil')" id="nav-perfil" class="nav-item text-gray-400"><span class="text-xl">👤</span><span class="text-[11px] font-medium">Perfil</span></button>
+    </div>
+  </nav>
+  <div id="music-mini-player" class="music-mini-player" style="display:none;">
+    <div class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center cursor-pointer" onclick="openMusicChat()"><div class="music-wave"><span></span><span></span><span></span><span></span></div></div>
+    <div class="flex-1 min-w-0" onclick="openMusicChat()"><p class="text-xs font-bold truncate" id="mini-title">—</p><p class="text-[10px] opacity-80 truncate" id="mini-artist">—</p></div>
+    <button onclick="togglePlayPause()" class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center text-sm">⏸</button>
+    <button onclick="stopMusic()" class="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center text-sm">✕</button>
+  </div>
+  <div id="notif-panel-global">
+    <div class="notif-header"><span style="font-weight:800;font-size:14px;">🔔 Notificações</span><div><button id="mark-all-btn" onclick="markAllRead()" style="display:none; font-size:10px; color:#dc2626; font-weight:bold; margin-right:8px; background:none; cursor:pointer;">Marcar todas lidas</button><button onclick="toggleNotifPanel()" style="background:none; cursor:pointer; font-size:18px; color:#9ca3af;">✕</button></div></div>
+    <div id="notif-list" style="max-height: 320px; overflow-y: auto;"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const SUPABASE_URL = 'https://kvnlttikslwsthirpltj.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt2bmx0dGlrc2x3c3RoaXJwbHRqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIxMTk0NTMsImV4cCI6MjA5NzY5NTQ1M30.rroy2ZJUUyF6FyJ7WBYBoD3YEwV1LCF5U3MDvuNEWJo';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const CARTO_API_KEY = 'cb1_3tn4_1_8c20323538f630fed04b7c07';
+
+let state = {
+  allStores: [], allNotifs: [], currentUser: null, entregadorAtual: null,
+  currentPage: 'home', pageHistory: ['home'], currentStoreId: null, storeProducts: [],
+  activeCategory: 'todas', profileTab: 'cliente',
+  cart: { items: [], storeId: null, storeName: '', deliveryFee: 0, coupon: null, discount: 0 },
+  map: null, userLocation: null,
+  notifInterval: null, locationPermissionAsked: false, notificationPermissionAsked: false,
+  deliveryMethod: 'com_codigo', selectedStoreId: null, lojistaView: 'produtos',
+  entregadorView: 'disponiveis', adminView: 'lojas',
+  favorites: [], trackingOrder: null, trackingMap: null, trackingMarker: null, trackingInterval: null,
+  currentChat: null, chatInterval: null, reviewOrder: null, reviewRating: 0,
+  optionsProduct: null, optionsSelected: [], optionsStore: null
+};
+let myStores = [], myStoreProducts = {}, myDrivers = {}, storeOrders = [];
+let entregadorOrders = [], allMusic = [], currentMusicId = null, currentMusicIndex = -1;
+let musicShuffle = false, musicRepeat = false;
+let pendingDeliveryOrder = null, pendingDeliveryCode = null;
+let musicFileSelected = null, allChats = [];
+
+function saveCart() { try { localStorage.setItem('deliveryapp_cart', JSON.stringify(state.cart)); } catch(e) {} }
+function loadCart() { try { const d = localStorage.getItem('deliveryapp_cart'); if (d) state.cart = JSON.parse(d); } catch(e) {} }
+function saveSession(u) { try { localStorage.setItem('deliveryapp_user', JSON.stringify(u)); } catch(e) {} }
+function loadSession() { try { const d = localStorage.getItem('deliveryapp_user'); return d ? JSON.parse(d) : null; } catch(e) { return null; } }
+function clearSession() { localStorage.removeItem('deliveryapp_user'); }
+function saveEntregador(e) { try { localStorage.setItem('deliveryapp_entregador', JSON.stringify(e)); } catch(e) {} }
+function loadEntregadorSession() { try { const d = localStorage.getItem('deliveryapp_entregador'); return d ? JSON.parse(d) : null; } catch(e) { return null; } }
+function clearEntregadorSession() { localStorage.removeItem('deliveryapp_entregador'); }
+
+function showToast(msg, type = 'default') {
+  const c = document.getElementById('toast-container');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.textContent = msg;
+  c.appendChild(t);
+  setTimeout(() => t.classList.add('show'), 10);
+  setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 3000);
+}
+function validateEmail(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
+function fmt(v) { return (v || 0).toFixed(2).replace('.', ','); }
+
+function togglePassword(inputId, btn) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  const isPwd = input.type === 'password';
+  input.type = isPwd ? 'text' : 'password';
+  btn.textContent = isPwd ? '🔓' : '🔒';
+}
+
+function toggleDarkMode() {
+  document.body.classList.toggle('dark');
+  localStorage.setItem('deliveryapp_dark', document.body.classList.contains('dark') ? '1' : '0');
+}
+function loadDarkMode() { if (localStorage.getItem('deliveryapp_dark') === '1') document.body.classList.add('dark'); }
+
+// ============ AUTH ============
+async function handleLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  if (!email || !password) { showToast('Preencha e-mail e senha', 'error'); return; }
+  if (!validateEmail(email)) { showToast('E-mail inválido', 'error'); return; }
+  const btn = document.getElementById('login-btn');
+  btn.disabled = true; btn.textContent = 'Entrando...';
+  try {
+    const { error } = await sb.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    showToast('Bem-vindo!', 'success');
+  } catch (err) { showToast(err.message || 'Erro ao entrar', 'error'); }
+  finally { btn.disabled = false; btn.textContent = 'Entrar'; }
+}
+async function handleRegister() {
+  const name = document.getElementById('register-name').value.trim();
+  const email = document.getElementById('register-email').value.trim();
+  const password = document.getElementById('register-password').value;
+  if (!name || !email || !password) { showToast('Preencha todos os campos', 'error'); return; }
+  if (!validateEmail(email)) { showToast('E-mail inválido', 'error'); return; }
+  if (password.length < 6) { showToast('Senha deve ter 6+ caracteres', 'error'); return; }
+  const btn = document.getElementById('register-btn');
+  btn.disabled = true; btn.textContent = 'Criando...';
+  try {
+    const { error } = await sb.auth.signUp({ email, password, options: { data: { full_name: name } } });
+    if (error) throw error;
+    showToast('Conta criada!', 'success');
+    toggleAuthForms(true);
+  } catch (err) { showToast(err.message, 'error'); }
+  finally { btn.disabled = false; btn.textContent = 'Criar conta'; }
+}
+async function handleSocialLogin(provider) { try { await sb.auth.signInWithOAuth({ provider }); } catch (err) { showToast('Erro: ' + err.message, 'error'); } }
+async function handlePhoneLogin() {
+  const phone = prompt('Digite seu telefone:');
+  if (!phone) return;
+  try {
+    const { error } = await sb.auth.signInWithOtp({ phone });
+    if (error) throw error;
+    const code = prompt('Código SMS:');
+    if (!code) return;
+    const { error: v } = await sb.auth.verifyOtp({ phone, token: code, type: 'sms' });
+    if (v) throw v;
+    showToast('Login OK!', 'success');
+  } catch (err) { showToast(err.message, 'error'); }
+}
+async function resetPassword() {
+  const email = document.getElementById('login-email').value.trim();
+  if (!email || !validateEmail(email)) { showToast('E-mail inválido', 'error'); return; }
+  try {
+    const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: 'https://huagnermarques-ops.github.io/DeliveryApp/reset.html' });
+    if (error) throw error;
+    showToast('E-mail enviado!', 'success');
+  } catch (err) { showToast('Erro: ' + err.message, 'error'); }
+}
+function toggleAuthForms(showLogin) {
+  document.getElementById('auth-login-form').style.display = showLogin ? 'block' : 'none';
+  document.getElementById('auth-register-form').style.display = showLogin ? 'none' : 'block';
+}
+function showApp() {
+  document.getElementById('auth-container').style.display = 'none';
+  document.getElementById('app-main').style.display = 'block';
+  initAppAfterLogin();
+}
+function handleLogout() {
+  if (state.entregadorAtual) {
+    if (!confirm('Sair como entregador?')) return;
+    clearEntregadorSession(); state.entregadorAtual = null;
+    document.getElementById('app-main').style.display = 'none';
+    document.getElementById('auth-container').style.display = 'flex';
+    return;
+  }
+  if (!confirm('Sair?')) return;
+  stopMusic();
+  if (state.trackingInterval) clearInterval(state.trackingInterval);
+  sb.auth.signOut(); clearSession(); state.currentUser = null;
+  document.getElementById('app-main').style.display = 'none';
+  document.getElementById('auth-container').style.display = 'flex';
+  showToast('Logout realizado', 'default');
+}
+sb.auth.onAuthStateChange((event, session) => {
+  if (event === 'SIGNED_IN' && session?.user && !state.entregadorAtual) {
+    state.currentUser = { id: session.user.id, email: session.user.email, full_name: session.user.user_metadata?.full_name || '' };
+    saveSession(state.currentUser);
+    showApp();
+  }
+});
+document.getElementById('login-btn').addEventListener('click', handleLogin);
+document.getElementById('register-btn').addEventListener('click', handleRegister);
+document.getElementById('show-register-btn').addEventListener('click', () => toggleAuthForms(false));
+document.getElementById('show-login-btn').addEventListener('click', () => toggleAuthForms(true));
+document.getElementById('google-btn').addEventListener('click', () => handleSocialLogin('google'));
+document.getElementById('facebook-btn').addEventListener('click', () => handleSocialLogin('facebook'));
+document.getElementById('phone-btn').addEventListener('click', handlePhoneLogin);
+
+// ============ ENTREGADOR LOGIN (via RPC) ============
+function openEntregadorLogin() {
+  document.getElementById('entregador-login-modal').style.display = 'flex';
+  document.getElementById('entregador-phone-input').value = '';
+  document.getElementById('entregador-login-error').style.display = 'none';
+  setTimeout(() => document.getElementById('entregador-phone-input').focus(), 200);
+}
+function closeEntregadorLogin() { document.getElementById('entregador-login-modal').style.display = 'none'; }
+async function loginAsEntregador() {
+  const phone = document.getElementById('entregador-phone-input').value.trim();
+  const err = document.getElementById('entregador-login-error');
+  if (!phone) { err.textContent = 'Digite o telefone'; err.style.display = 'block'; return; }
+  err.style.display = 'none';
+
+  try {
+    const { data, error } = await sb.rpc('login_entregador', { phone_input: phone });
+    if (error) throw error;
+
+    const found = Array.isArray(data) ? data[0] : data;
+    if (!found) {
+      err.textContent = '❌ Telefone não encontrado.';
+      err.style.display = 'block';
+      return;
+    }
+
+    state.entregadorAtual = found;
+    state.currentUser = {
+      id: found.id,
+      email: (found.phone || '') + '@entregador.local',
+      full_name: found.full_name,
+      is_entregador: true
+    };
+    saveEntregador(found);
+    closeEntregadorLogin();
+    document.getElementById('auth-container').style.display = 'none';
+    document.getElementById('app-main').style.display = 'block';
+    document.getElementById('profile-avatar').textContent = '🏍️';
+    document.getElementById('tab-btn-entregador').style.display = 'flex';
+    state.profileTab = 'entregador';
+    await initAppAfterLogin(true);
+    showToast('Bem-vindo, ' + found.full_name + '!', 'success');
+  } catch(e) {
+    console.error('Login entregador erro:', e);
+    err.textContent = 'Erro: ' + (e.message || 'desconhecido');
+    err.style.display = 'block';
+  }
+}
+
+// ============ NAV ============
+function navigate(page, extra) {
+  if (page !== state.currentPage) state.pageHistory.push(page);
+  state.currentPage = page;
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  ['home', 'mapa', 'chat', 'perfil'].forEach(p => {
+    const btn = document.getElementById('nav-' + p);
+    if (btn) btn.className = `nav-item ${p === page ? 'text-red-600' : 'text-gray-400'}`;
+  });
+  if (page === 'store' && extra) { state.currentStoreId = extra; loadStoreDetail(extra); }
+  if (page === 'checkout') renderCheckout();
+  if (page === 'orders') loadOrders();
+  if (page === 'mapa') { initMap(); renderMapList(); }
+  if (page === 'perfil' && (state.currentUser || state.entregadorAtual)) showProfileView();
+  if (page === 'chat') loadChatsList();
+  if (page === 'tracking' && extra) startTracking(extra);
+  window.scrollTo(0, 0);
+}
+function goBack() {
+  if (state.pageHistory.length > 1) { state.pageHistory.pop(); navigate(state.pageHistory[state.pageHistory.length - 1]); }
+  else navigate('home');
+}
+
+// ============ CART ============
+function getCartTotal() { return state.cart.items.reduce((s, i) => s + i.price * i.quantity, 0); }
+function getCartCount() { return state.cart.items.reduce((s, i) => s + i.quantity, 0); }
+
+function cartBarHTML() {
+  if (getCartCount() === 0) return '';
+  const total = getCartTotal() - (state.cart.discount || 0) + (state.cart.deliveryFee || 0);
+  return `<div class="cart-bar-wrapper"><button onclick="navigate('checkout')" class="w-full bg-red-600 text-white px-5 py-3.5 flex items-center justify-between shadow-xl rounded-2xl"><div class="flex items-center gap-2"><div class="w-7 h-7 bg-white/20 rounded-lg flex items-center justify-center">🛍️</div><span class="text-sm font-bold">${getCartCount()}</span></div><span class="font-bold text-sm">Ver carrinho</span><span class="font-extrabold text-sm">R$ ${fmt(total)}</span></button></div>`;
+}
+function renderCartBars() { ['cart-bar-home','cart-bar-store'].forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = cartBarHTML(); }); }
+
+function addToCartDirect(product, store, options = [], extraPrice = 0) {
+  const finalPrice = product.price + extraPrice;
+  const optionStr = options.length ? ' (' + options.join(', ') + ')' : '';
+  const itemName = product.name + optionStr;
+  const itemKey = product.id + '|' + options.join('|');
+  if (state.cart.storeId && state.cart.storeId !== store.id) {
+    if (!confirm('Carrinho tem itens de outra loja. Limpar?')) return;
+    state.cart = { items: [], storeId: store.id, storeName: store.name, deliveryFee: store.delivery_fee || 0, coupon: null, discount: 0 };
+  }
+  if (!state.cart.storeId) { state.cart.storeId = store.id; state.cart.storeName = store.name; state.cart.deliveryFee = store.delivery_fee || 0; }
+  const ex = state.cart.items.find(i => i.key === itemKey);
+  if (ex) ex.quantity++;
+  else state.cart.items.push({ key: itemKey, product_id: product.id, name: itemName, price: finalPrice, quantity: 1, emoji: product.emoji || '📦', options });
+  saveCart(); renderCartBars(); renderStoreDetail();
+  showToast(`${product.name} adicionado!`, 'success');
+}
+function addProd(pid) {
+  const p = state.storeProducts.find(x => x.id === pid);
+  if (!p) return;
+  const store = state.allStores.find(x => x.id === state.currentStoreId);
+  if (!store) return;
+  const opts = Array.isArray(p.options) ? p.options : [];
+  if (opts.length > 0) openOptionsModal(p, store, opts);
+  else addToCartDirect(p, store);
+}
+function removeProd(key) {
+  const ex = state.cart.items.find(i => i.key === key);
+  if (ex) { ex.quantity--; if (ex.quantity <= 0) state.cart.items = state.cart.items.filter(i => i.key !== key); }
+  if (state.cart.items.length === 0) state.cart = { items: [], storeId: null, storeName: '', deliveryFee: 0, coupon: null, discount: 0 };
+  saveCart(); renderCartBars(); renderStoreDetail();
+}
+function updateCartItem(key, delta) {
+  const item = state.cart.items.find(i => i.key === key);
+  if (item) { item.quantity += delta; if (item.quantity <= 0) state.cart.items = state.cart.items.filter(i => i.key !== key); }
+  if (state.cart.items.length === 0) state.cart = { items: [], storeId: null, storeName: '', deliveryFee: 0, coupon: null, discount: 0 };
+  saveCart(); renderCartBars();
+}
+function cleanupProd(pid) {
+  const items = state.cart.items.filter(i => i.product_id === pid);
+  if (items.length > 0) removeProd(items[items.length - 1].key);
+}
+
+// ============ OPTIONS ============
+function openOptionsModal(product, store, options) {
+  state.optionsProduct = product; state.optionsStore = store; state.optionsSelected = [];
+  document.getElementById('options-emoji').textContent = product.emoji || '📦';
+  document.getElementById('options-name').textContent = product.name;
+  document.getElementById('options-list').innerHTML = options.map((opt, idx) => `<div class="option-item" data-idx="${idx}" onclick="toggleOption(${idx})"><div><p style="font-weight:600;font-size:13px;margin:0;">${opt.name}</p><p style="font-size:11px;color:var(--muted);margin:0;">+ R$ ${fmt(opt.price)}</p></div><span class="check" style="font-size:20px;color:#dc2626;">○</span></div>`).join('');
+  updateOptionsTotal();
+  document.getElementById('options-modal').style.display = 'flex';
+}
+function toggleOption(idx) {
+  const el = document.querySelector(`.option-item[data-idx="${idx}"]`);
+  const opt = state.optionsProduct.options[idx];
+  const pos = state.optionsSelected.findIndex(o => o.idx === idx);
+  if (pos >= 0) { state.optionsSelected.splice(pos, 1); el.classList.remove('selected'); el.querySelector('.check').textContent = '○'; }
+  else { state.optionsSelected.push({ idx, name: opt.name, price: opt.price }); el.classList.add('selected'); el.querySelector('.check').textContent = '●'; }
+  updateOptionsTotal();
+}
+function updateOptionsTotal() {
+  const extra = state.optionsSelected.reduce((s, o) => s + o.price, 0);
+  document.getElementById('options-total').textContent = 'Total: R$ ' + fmt(state.optionsProduct.price + extra);
+}
+function confirmOptions() {
+  const names = state.optionsSelected.map(o => o.name);
+  const extra = state.optionsSelected.reduce((s, o) => s + o.price, 0);
+  addToCartDirect(state.optionsProduct, state.optionsStore, names, extra);
+  closeOptionsModal();
+}
+function closeOptionsModal() { document.getElementById('options-modal').style.display = 'none'; state.optionsProduct = null; state.optionsSelected = []; }
+
+// ============ FAVORITES ============
+async function loadFavorites() {
+  if (!state.currentUser?.id) return;
+  try { const { data } = await sb.from('favorites').select('store_id').eq('user_id', state.currentUser.id); state.favorites = (data || []).map(f => f.store_id); } catch(e) { state.favorites = []; }
+}
+async function toggleFavorite(storeId, event) {
+  if (event) event.stopPropagation();
+  if (!state.currentUser?.id) { showToast('Faça login', 'error'); return; }
+  const isFav = state.favorites.includes(storeId);
+  try {
+    if (isFav) { await sb.from('favorites').delete().eq('user_id', state.currentUser.id).eq('store_id', storeId); state.favorites = state.favorites.filter(id => id !== storeId); showToast('Removido', 'default'); }
+    else { await sb.from('favorites').insert({ user_id: state.currentUser.id, store_id: storeId }); state.favorites.push(storeId); showToast('❤️ Favoritado', 'success'); }
+    renderStoreGrid(); renderFavoritesSection();
+  } catch(e) { showToast('Erro', 'error'); }
+}
+function renderFavoritesSection() {
+  const el = document.getElementById('favorites-section');
+  if (!el) return;
+  const favStores = state.allStores.filter(s => state.favorites.includes(s.id));
+  if (favStores.length === 0) { el.innerHTML = ''; return; }
+  el.innerHTML = `<div class="px-4 mt-2"><div class="flex items-center justify-between mb-3"><h2 class="font-bold text-base">❤️ Favoritos</h2><span class="text-xs text-gray-400">${favStores.length}</span></div><div class="flex gap-3 overflow-x-auto scrollbar-hide pb-2">${favStores.map(s => `<button onclick="navigate('store','${s.id}')" style="min-width: 130px;" class="bg-white rounded-2xl shadow-sm overflow-hidden"><div style="height: 65px; background: linear-gradient(135deg, #fef2f2, #fee2e2); display: flex; align-items: center; justify-content: center; font-size: 28px;">${s.banner_url ? `<img src="${s.banner_url}" style="width:100%;height:100%;object-fit:cover;" />` : (s.emoji || '🏪')}</div><div class="p-2 text-left"><p class="font-bold text-xs truncate">${s.name}</p><p class="text-[10px] text-gray-400">⭐ ${s.rating || 'Novo'}</p></div></button>`).join('')}</div></div>`;
+}
+
+// ============ HOME ============
+const CATEGORIES = [
+  { key:'todas', label:'Todas', emoji:'🏪' }, { key:'restaurante', label:'Restaurante', emoji:'🍔' },
+  { key:'mercado', label:'Mercado', emoji:'🛒' }, { key:'farmacia', label:'Farmácia', emoji:'💊' },
+  { key:'acai', label:'Açaí', emoji:'🍇' }, { key:'padaria', label:'Padaria', emoji:'🍞' }, { key:'pet', label:'Pet', emoji:'🐾' }
+];
+function renderCategoryFilter() {
+  const el = document.getElementById('category-filter');
+  if (!el) return;
+  el.innerHTML = CATEGORIES.map(c => {
+    const isActive = state.activeCategory === c.key;
+    return `<button onclick="setCategory('${c.key}')" class="flex flex-col items-center gap-1 px-4 py-2 flex-shrink-0 ${isActive ? 'category-btn-active' : 'category-btn'}"><span class="text-xl">${c.emoji}</span><span class="text-[10px] font-semibold" style="white-space:nowrap;">${c.label}</span></button>`;
+  }).join('');
+}
+function setCategory(key) { state.activeCategory = key; renderCategoryFilter(); renderStoreGrid(); }
+async function renderStoreGrid() {
+  const q = document.getElementById('search-input')?.value.toLowerCase() || '';
+  const filtered = state.allStores.filter(s => {
+    const catOk = state.activeCategory === 'todas' || s.category === state.activeCategory;
+    const qOk = !q || s.name.toLowerCase().includes(q) || (s.description && s.description.toLowerCase().includes(q));
+    return catOk && qOk;
+  });
+  document.getElementById('store-count').innerText = filtered.length + ' encontradas';
+  const grid = document.getElementById('store-grid');
+  if (filtered.length === 0) {
+    grid.innerHTML = `<div class="empty-state-full"><div class="empty-emoji">🏪</div><div class="empty-title">Nenhuma loja encontrada</div><button onclick="navigate('perfil')" class="empty-button">📝 Cadastrar Loja</button></div>`;
+    grid.classList.remove('store-grid-container'); return;
+  }
+  const ratings = {};
+  try {
+    const { data } = await sb.from('reviews').select('store_id, rating');
+    (data || []).forEach(r => {
+      if (!ratings[r.store_id]) ratings[r.store_id] = { sum: 0, count: 0 };
+      ratings[r.store_id].sum += r.rating; ratings[r.store_id].count++;
+    });
+  } catch(e) {}
+  grid.innerHTML = filtered.map(s => {
+    const r = ratings[s.id];
+    const avg = r ? (r.sum / r.count).toFixed(1) : null;
+    const isFav = state.favorites.includes(s.id);
+    return `<div class="store-card" onclick="navigate('store','${s.id}')">
+      <div class="store-banner">
+        <div class="fav-heart" onclick="toggleFavorite('${s.id}', event)">${isFav ? '❤️' : '🤍'}</div>
+        ${s.banner_url ? `<img src="${s.banner_url}" alt="${s.name}" onerror="this.style.display='none';this.parentElement.innerHTML+='<span class=\\'text-4xl\\'>${s.emoji || '🏪'}</span>';" />` : `<span class="text-4xl">${s.emoji || '🏪'}</span>`}
+        ${s.is_featured ? '<span style="position:absolute;top:6px;left:6px;background:#dc2626;color:white;font-size:9px;font-weight:bold;padding:2px 6px;border-radius:20px;">🔥 TOP</span>' : ''}
+      </div>
+      <div class="store-info">
+        <h3 class="truncate">${s.name}</h3>
+        <p class="text-gray-400 truncate">${s.description || s.category}</p>
+        <div class="store-meta">
+          <span style="font-weight:600;background:#fef9c3;padding:2px 6px;border-radius:20px;">⭐ ${avg || 'Novo'}${r ? ` (${r.count})` : ''}</span>
+          <span style="color:#dc2626;font-weight:600;">🚴 ${(s.delivery_fee || 0) === 0 ? 'Grátis' : 'R$' + fmt(s.delivery_fee)}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  grid.classList.add('store-grid-container');
+}
+function renderFeaturedBanner() {
+  const featured = state.allStores.find(s => s.is_featured);
+  const el = document.getElementById('featured-banner');
+  if (!el) return;
+  if (!featured) { el.innerHTML = ''; return; }
+  const bg = featured.banner_url ? `background-image: linear-gradient(135deg, rgba(220,38,38,0.75), rgba(153,27,27,0.85)), url('${featured.banner_url}'); background-size: cover; background-position: center;` : '';
+  el.innerHTML = `<div class="featured-banner" style="${bg}" onclick="navigate('store','${featured.id}')"><div class="banner-emoji">${featured.banner_url ? '' : (featured.emoji || '🏪')}</div><div class="banner-tag">⚡ EM DESTAQUE</div><div class="banner-title">${featured.name}</div><div class="banner-desc">${featured.description || 'Confira!'}</div><div class="banner-button">PEDIR AGORA →</div></div>`;
+}
+
+// ============ MAPA ============
+function initMap() {
+  if (state.map) { state.map.invalidateSize(); return; }
+  const center = state.userLocation ? [state.userLocation.lat, state.userLocation.lng] : [-23.5505, -46.6333];
+  state.map = L.map('map').setView(center, 13);
+  L.tileLayer(`https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png?key=${CARTO_API_KEY}`, { attribution: '© OpenStreetMap, © CARTO', subdomains: 'abcd', maxZoom: 19 }).addTo(state.map);
+  state.allStores.forEach(store => {
+    if (store.latitude && store.longitude) {
+      L.marker([store.latitude, store.longitude], { icon: L.divIcon({ html: `<div style="background:#dc2626;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;border:2px solid white;">${store.emoji || '🏪'}</div>`, iconSize: [36,36] }) }).addTo(state.map).bindPopup(`<strong>${store.name}</strong>`);
+    }
+  });
+}
+function renderMapList() {
+  const q = document.getElementById('map-search')?.value.toLowerCase() || '';
+  const fStores = state.allStores.filter(s => !q || s.name.toLowerCase().includes(q));
+  let html = '';
+  if (fStores.length) html += `<div class="flex justify-between items-center mb-2"><h2 class="font-bold text-sm">🏪 Lojas</h2><span class="text-xs text-gray-400">${fStores.length}</span></div><div class="mb-4 space-y-2">${fStores.map(s => `<button onclick="navigate('store','${s.id}')" class="flex items-center gap-3 px-4 py-3 w-full text-left bg-white shadow-sm rounded-2xl"><div class="w-12 h-12 bg-gray-50 rounded-full flex items-center justify-center text-2xl overflow-hidden">${s.banner_url ? `<img src="${s.banner_url}" class="w-full h-full object-cover" />` : (s.emoji || '🏪')}</div><div class="flex-1"><p class="font-semibold text-sm">${s.name}</p><p class="text-xs text-gray-400">${s.category}</p></div></button>`).join('')}</div>`;
+  document.getElementById('map-list').innerHTML = html || '<div class="text-center text-gray-400 py-6">Nada encontrado</div>';
+}
+
+// ============ STORE ============
+async function loadStoreDetail(id) {
+  document.getElementById('store-detail-content').innerHTML = '<div class="flex justify-center items-center h-64"><div class="w-6 h-6 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div></div>';
+  if (!id) { navigate('home'); return; }
+  try {
+    const { data: s } = await sb.from('stores').select('*').eq('id', id).maybeSingle();
+    if (!s) { document.getElementById('store-detail-content').innerHTML = `<div class="p-8 text-center"><p class="text-gray-400">Loja não encontrada</p></div>`; return; }
+    state.currentStoreId = id;
+    const { data: p } = await sb.from('products').select('*').eq('store_id', id).eq('is_available', true);
+    state.storeProducts = p || [];
+    renderStoreDetail(s);
+  } catch (err) { showToast('Erro: ' + err.message, 'error'); navigate('home'); }
+}
+async function renderStoreDetail(store) {
+  const s = store || state.allStores.find(x => x.id === state.currentStoreId);
+  if (!s) return;
+  const byCategory = {};
+  state.storeProducts.forEach(p => { const cat = p.category || 'Geral'; if (!byCategory[cat]) byCategory[cat] = []; byCategory[cat].push(p); });
+  let productsHtml = '';
+  if (state.storeProducts.length === 0) {
+    productsHtml = '<div class="bg-white rounded-2xl p-8 text-center"><p class="text-gray-400 text-sm">Nenhum produto</p></div>';
+  } else {
+    Object.entries(byCategory).forEach(([cat, prods]) => {
+      productsHtml += `<div class="mb-4"><p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2 px-1">📂 ${cat}</p>`;
+      productsHtml += prods.map(p => {
+        const qty = state.cart.items.filter(i => i.product_id === p.id).reduce((s, i) => s + i.quantity, 0);
+        const hasOpts = Array.isArray(p.options) && p.options.length > 0;
+        return `<div class="product-item"><div class="product-icon-frame">${p.emoji || '🛍️'}</div><div class="product-info"><div class="product-name">${p.name}${hasOpts ? ' <span style="font-size:10px;color:#dc2626;">+ opções</span>' : ''}</div>${p.description ? `<div class="product-desc">${p.description}</div>` : ''}<div class="product-price">R$ ${fmt(p.price)}</div><div class="product-stock">Estoque: ${p.stock || 0}</div><div>${qty > 0 ? `<div class="quantity-control"><div class="qty-btn" onclick="cleanupProd('${p.id}')">−</div><span class="qty-value">${qty}</span><div class="qty-btn" onclick="addProd('${p.id}')">+</div></div>` : `<div class="add-button" onclick="addProd('${p.id}')">+ Adicionar</div>`}</div></div></div>`;
+      }).join('');
+      productsHtml += '</div>';
+    });
+  }
+  const sb_ = s.is_open ? '<span class="header-badge header-badge-green">✅ Aberta</span>' : '<span class="header-badge header-badge-gray">🔴 Fechada</span>';
+  const dt = (s.delivery_fee || 0) === 0 ? 'Grátis' : `R$ ${fmt(s.delivery_fee)}`;
+  document.getElementById('store-detail-content').innerHTML = `<div class="store-header-red"><button onclick="goBack()" class="back-button">← Voltar</button>${s.banner_url ? `<img src="${s.banner_url}" class="w-full h-32 object-cover rounded-2xl mb-3 mt-1" />` : ''}<div><h1 class="text-xl font-extrabold">${s.name}</h1><p class="text-xs opacity-80 mt-0.5">${s.category}</p><p class="text-xs opacity-70">${s.description || ''}</p></div><div class="flex flex-wrap items-center gap-2 mt-4">${sb_}<span class="header-badge">🚴 ${dt}</span></div></div><div class="menu-header-simple"><span class="menu-title">Produtos (${state.storeProducts.length})</span></div><div class="products-container">${productsHtml}</div>`;
+}
+
+// ============ CHECKOUT ============
+function renderCheckout() {
+  const btn = document.getElementById('confirm-btn');
+  if (state.cart.items.length === 0) { document.getElementById('checkout-content').innerHTML = '<div class="p-8 text-center bg-white rounded-2xl"><p class="text-gray-400">Carrinho vazio</p></div>'; btn.style.display = 'none'; return; }
+  btn.style.display = 'block';
+  const subtotal = getCartTotal(), discount = state.cart.discount || 0;
+  const total = subtotal - discount + (state.cart.deliveryFee || 0);
+  document.getElementById('checkout-content').innerHTML = `
+    <div class="bg-white rounded-2xl p-4 space-y-3"><div class="pb-2 border-b border-gray-100"><p class="font-bold">${state.cart.storeName}</p></div>
+      ${state.cart.items.map(item => `<div class="flex items-center justify-between py-2"><div class="flex-1"><p class="font-semibold text-sm">${item.name}</p><div class="flex items-center gap-2 mt-1"><button onclick="updateCartItem('${item.key}', -1);renderCheckout()" class="w-6 h-6 flex items-center justify-center font-bold bg-gray-100 rounded-full">−</button><span class="text-sm font-bold">${item.quantity}</span><button onclick="updateCartItem('${item.key}', 1);renderCheckout()" class="w-6 h-6 bg-red-600 text-white flex items-center justify-center font-bold rounded-full">+</button></div></div><p class="font-bold text-sm text-red-600">R$ ${fmt(item.price * item.quantity)}</p></div>`).join('')}
+      <div class="pt-3 space-y-1 bg-gray-50 p-4 rounded-2xl"><div class="flex justify-between text-sm"><span>Subtotal</span><span>R$ ${fmt(subtotal)}</span></div>${discount > 0 ? `<div class="flex justify-between text-sm" style="color:#16a34a;"><span>Desconto</span><span>- R$ ${fmt(discount)}</span></div>` : ''}<div class="flex justify-between text-sm"><span>Entrega</span><span>${(state.cart.deliveryFee || 0) === 0 ? 'Grátis' : 'R$ ' + fmt(state.cart.deliveryFee)}</span></div><div class="flex justify-between font-bold text-base pt-1"><span>Total</span><span class="text-red-600">R$ ${fmt(total)}</span></div></div>
+    </div>
+    <div class="bg-white rounded-2xl p-4"><p class="font-bold text-sm mb-2">🏷️ Cupom de desconto</p>${state.cart.coupon ? `<div class="coupon-applied"><span>✅ ${state.cart.coupon} (-R$ ${fmt(discount)})</span><button onclick="removeCoupon()" style="background:none;color:#dc2626;font-weight:700;cursor:pointer;">✕</button></div>` : `<div class="coupon-input"><input id="coupon-input" type="text" placeholder="Digite o código" /><button onclick="applyCoupon()">Aplicar</button></div>`}</div>
+    <p class="text-xs text-gray-400">💳 Pagamento na entrega</p>
+    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 rounded-2xl"><p class="font-bold text-sm mb-3">🛡️ Entrega Segura</p><div class="grid grid-cols-2 gap-2">${[['com_codigo', '🔑 Com código'], ['com_foto', '📸 Com foto'], ['na_porta', '🚪 Na porta'], ['sem_contato', '📦 Sem contato']].map(([v, l]) => `<label class="flex items-center gap-2 cursor-pointer p-2 rounded-xl"><input type="radio" name="dmethod" value="${v}" ${v === state.deliveryMethod ? 'checked' : ''} onchange="state.deliveryMethod='${v}'" class="accent-red-600 w-4 h-4" /><span class="text-xs">${l}</span></label>`).join('')}</div></div>
+    <div class="space-y-1 mt-4"><p class="text-sm font-semibold">Endereço *</p><input id="checkout-address" type="text" placeholder="Rua, número, bairro..." class="w-full h-10 px-3 text-sm rounded-2xl" style="background:var(--bg) !important; color:var(--text) !important;" /></div>
+    <div class="space-y-1"><p class="text-sm font-semibold">Observações</p><textarea id="checkout-obs" placeholder="Sem cebola..." class="w-full h-20 px-3 py-2 text-sm resize-none rounded-2xl" style="background:var(--bg) !important; color:var(--text) !important;"></textarea></div>
+  `;
+  btn.textContent = `Confirmar · R$ ${fmt(total)}`;
+}
+async function applyCoupon() {
+  const input = document.getElementById('coupon-input')?.value.trim().toUpperCase();
+  if (!input) return;
+  try {
+    const { data } = await sb.from('coupons').select('*').eq('code', input).eq('active', true).maybeSingle();
+    if (!data) { showToast('Cupom inválido', 'error'); return; }
+    if (data.store_id !== state.cart.storeId) { showToast('Cupom de outra loja', 'error'); return; }
+    if (data.uses >= data.max_uses) { showToast('Cupom esgotado', 'error'); return; }
+    const subtotal = getCartTotal();
+    if (subtotal < (data.min_order || 0)) { showToast(`Mínimo: R$ ${fmt(data.min_order)}`, 'error'); return; }
+    const discount = data.discount_type === 'percent' ? subtotal * (data.discount_value / 100) : data.discount_value;
+    state.cart.coupon = data.code; state.cart.discount = Math.min(discount, subtotal);
+    saveCart(); showToast(`✅ Cupom aplicado!`, 'success');
+    renderCheckout(); renderCartBars();
+  } catch(e) { showToast('Erro: ' + e.message, 'error'); }
+}
+function removeCoupon() { state.cart.coupon = null; state.cart.discount = 0; saveCart(); renderCheckout(); renderCartBars(); }
+
+/* ============ CONFIRMAR PEDIDO (com validação) ============ */
+async function confirmOrder() {
+  if (!state.currentUser?.id || state.entregadorAtual) { showToast('Faça login como cliente', 'error'); return; }
+
+  if (!state.cart.storeId) {
+    showToast('Carrinho sem loja. Adicione itens novamente.', 'error');
+    clearCart();
+    navigate('home');
+    return;
+  }
+
+  const { data: storeCheck, error: storeErr } = await sb
+    .from('stores')
+    .select('id')
+    .eq('id', state.cart.storeId)
+    .maybeSingle();
+
+  if (storeErr || !storeCheck) {
+    showToast('⚠️ A loja deste carrinho não existe mais. Limpando...', 'error');
+    clearCart();
+    navigate('home');
+    return;
+  }
+
+  const address = document.getElementById('checkout-address')?.value.trim();
+  if (!address) { showToast('Endereço obrigatório', 'error'); return; }
+
+  const btn = document.getElementById('confirm-btn');
+  btn.disabled = true; btn.textContent = 'Enviando...';
+  const observations = document.getElementById('checkout-obs')?.value.trim() || '';
+  const code = Math.floor(1000 + Math.random() * 9000).toString();
+  const subtotal = getCartTotal(), discount = state.cart.discount || 0, total = subtotal - discount + (state.cart.deliveryFee || 0);
+  const customerName = state.currentUser.full_name || state.currentUser.email?.split('@')[0] || 'Cliente';
+
+  try {
+    const { data: order, error } = await sb.from('orders').insert({
+      customer_id: state.currentUser.id,
+      customer_name: customerName,
+      store_id: state.cart.storeId,
+      store_name: state.cart.storeName,
+      subtotal,
+      delivery_fee: state.cart.deliveryFee,
+      total,
+      delivery_method: state.deliveryMethod,
+      delivery_address: address,
+      observations,
+      status: 'pendente',
+      confirmation_code: code,
+      coupon_code: state.cart.coupon || null,
+      discount
+    }).select().maybeSingle();
+
+    if (error) throw error;
+
+    if (order) {
+      await sb.from('order_items').insert(state.cart.items.map(i => ({
+        order_id: order.id,
+        product_id: i.product_id,
+        name: i.name,
+        price: i.price,
+        quantity: i.quantity,
+        emoji: i.emoji
+      })));
+
+      if (state.cart.coupon) {
+        const { data: c } = await sb.from('coupons').select('uses').eq('code', state.cart.coupon).maybeSingle();
+        if (c) await sb.from('coupons').update({ uses: (c.uses || 0) + 1 }).eq('code', state.cart.coupon);
+      }
+
+      await sb.from('notifications').insert({
+        user_id: state.currentUser.id,
+        title: '✅ Pedido confirmado!',
+        message: `Pedido em ${state.cart.storeName}\n🔑 Código: ${code}`,
+        type: 'pedido',
+        is_read: false,
+        created_at: new Date().toISOString()
+      });
+
+      const store = state.allStores.find(s => s.id === state.cart.storeId);
+      if (store && store.owner_id) {
+        await sb.from('notifications').insert({
+          user_id: store.owner_id,
+          title: `🛍️ Novo pedido - ${store.name}`,
+          message: `Pedido de ${customerName}`,
+          type: 'pedido',
+          is_read: false,
+          created_at: new Date().toISOString()
+        });
+      }
+
+      showToast('Pedido confirmado!', 'success');
+      clearCart();
+      navigate('home');
+      loadNotifications();
+    }
+  } catch (err) {
+    console.error(err);
+    if (err.message?.includes('orders_store_id_fkey')) {
+      showToast('⚠️ Loja não encontrada. Carrinho limpo.', 'error');
+      clearCart();
+      navigate('home');
+    } else {
+      showToast('Erro: ' + err.message, 'error');
+    }
+  } finally {
+    btn.disabled = false;
+    btn.textContent = `Confirmar`;
+  }
+}
+function clearCart() { state.cart = { items: [], storeId: null, storeName: '', deliveryFee: 0, coupon: null, discount: 0 }; saveCart(); renderCartBars(); }
+
+// ============ ORDERS ============
+async function loadOrders() {
+  if (!state.currentUser?.id) { document.getElementById('orders-list').innerHTML = '<div class="text-center py-12 text-gray-400">Faça login</div>'; return; }
+  try {
+    const { data: orders } = await sb.from('orders').select('*, order_items(name, quantity)').eq('customer_id', state.currentUser.id).order('created_at', { ascending: false });
+    if (!orders || orders.length === 0) { document.getElementById('orders-list').innerHTML = '<div class="text-center py-12 text-gray-400">Nenhum pedido</div>'; return; }
+    document.getElementById('orders-list').innerHTML = orders.map(o => {
+      const showCode = o.confirmation_code && o.delivery_method === 'com_codigo' && o.status !== 'entregue' && o.status !== 'cancelado';
+      const canTrack = o.status === 'saiu';
+      const canReview = o.status === 'entregue' && !o.reviewed;
+      const statusBgMap = { 'pendente': '#fef3c7', 'preparando': '#dbeafe', 'saiu': '#d1fae5', 'entregue': '#d1fae5', 'cancelado': '#fee2e2' };
+      const statusColorMap = { 'pendente': '#92400e', 'preparando': '#1e40af', 'saiu': '#065f46', 'entregue': '#065f46', 'cancelado': '#991b1b' };
+      return `<div class="bg-white shadow-sm rounded-2xl p-4"><div class="flex justify-between mb-2"><p class="font-bold text-sm">${o.store_name}</p><span class="px-2 py-0.5 text-[10px] font-semibold rounded-full" style="background:${statusBgMap[o.status] || '#fef3c7'};color:${statusColorMap[o.status] || '#92400e'};">${o.status}</span></div><div class="text-xs text-gray-400">${(o.order_items || []).map(i => i.quantity + 'x ' + i.name).join(', ')}</div><div class="flex justify-between mt-2"><span class="text-[10px] text-gray-300">${new Date(o.created_at).toLocaleString()}</span><span class="font-bold text-sm text-red-600">R$ ${fmt(o.total)}</span></div>${o.discount > 0 ? `<p class="text-[10px] text-green-600 mt-1">🏷️ Desconto: -R$ ${fmt(o.discount)}</p>` : ''}${showCode ? `<div style="background:linear-gradient(135deg, #dc2626, #b91c1c); border-radius:14px; padding:14px; margin-top:12px; text-align:center;"><p style="color:rgba(255,255,255,0.85); font-size:10px; font-weight:700; letter-spacing:2px; margin-bottom:6px;">🔑 CÓDIGO</p><p style="color:white; font-size:36px; font-weight:900; letter-spacing:14px; margin:0; line-height:1; padding-left:14px;">${o.confirmation_code}</p></div>` : ''}${canTrack ? `<button onclick="navigate('tracking','${o.id}')" class="w-full mt-3 text-white text-sm font-bold py-2.5 rounded-full" style="background:linear-gradient(135deg,#7c3aed,#6d28d9);">🛵 Rastrear entrega</button>` : ''}${canReview ? `<button onclick="openReviewModal('${o.id}', '${o.store_name.replace(/'/g, "\\'")}')" class="w-full mt-3 bg-yellow-500 text-white text-sm font-bold py-2.5 rounded-full">⭐ Avaliar pedido</button>` : ''}</div>`;
+    }).join('');
+  } catch (err) { showToast('Erro', 'error'); }
+}
+
+// ============ REVIEWS ============
+function openReviewModal(orderId, storeName) {
+  state.reviewOrder = orderId; state.reviewRating = 0;
+  document.getElementById('review-store-name').textContent = 'Como foi seu pedido em ' + storeName + '?';
+  document.getElementById('review-comment').value = '';
+  document.querySelectorAll('#stars-input .star').forEach(s => s.classList.remove('active'));
+  document.getElementById('review-modal').style.display = 'flex';
+}
+function closeReviewModal() { document.getElementById('review-modal').style.display = 'none'; state.reviewOrder = null; }
+document.querySelectorAll('#stars-input .star').forEach(s => {
+  s.addEventListener('click', () => {
+    const v = parseInt(s.dataset.val);
+    state.reviewRating = v;
+    document.querySelectorAll('#stars-input .star').forEach(x => x.classList.toggle('active', parseInt(x.dataset.val) <= v));
+  });
+});
+async function submitReview() {
+  if (!state.reviewRating) { showToast('Escolha uma nota', 'error'); return; }
+  const { data: order } = await sb.from('orders').select('store_id').eq('id', state.reviewOrder).maybeSingle();
+  if (!order) return;
+  try {
+    await sb.from('reviews').insert({ store_id: order.store_id, order_id: state.reviewOrder, customer_id: state.currentUser.id, customer_name: state.currentUser.full_name, rating: state.reviewRating, comment: document.getElementById('review-comment').value.trim() || null });
+    await sb.from('orders').update({ reviewed: true }).eq('id', state.reviewOrder);
+    showToast('⭐ Avaliação enviada!', 'success'); closeReviewModal(); loadOrders();
+  } catch(e) { showToast('Erro: ' + e.message, 'error'); }
+}
+
+/* ============ TRACKING (com localização real) ============ */
+async function startTracking(orderId) {
+  const { data: order } = await sb.from('orders').select('*').eq('id', orderId).maybeSingle();
+  if (!order) { showToast('Pedido não encontrado', 'error'); return; }
+  state.trackingOrder = order;
+  document.getElementById('tracking-status').textContent = 'Pedido saiu para entrega';
+
+  const getUserPosition = () => new Promise((resolve) => {
+    if (!navigator.geolocation) { resolve(null); return; }
+    navigator.geolocation.getCurrentPosition(
+      pos => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => resolve(null),
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
+  });
+
+  let userPos = state.userLocation;
+  if (!userPos) {
+    userPos = await getUserPosition();
+    if (userPos) state.userLocation = userPos;
+  }
+
+  if (!userPos) {
+    showToast('⚠️ Não foi possível pegar sua localização. Verifique as permissões.', 'error');
+    userPos = { lat: -23.5505, lng: -46.6333 };
+  }
+
+  if (state.trackingMap) { state.trackingMap.remove(); state.trackingMap = null; }
+  state.trackingMap = L.map('tracking-map').setView([userPos.lat, userPos.lng], 15);
+
+  L.tileLayer(`https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png?key=${CARTO_API_KEY}`, { attribution: '© OpenStreetMap, © CARTO', subdomains: 'abcd', maxZoom: 19 }).addTo(state.trackingMap);
+
+  const store = state.allStores.find(s => s.id === order.store_id);
+  const startLat = (store?.latitude) || userPos.lat + 0.005;
+  const startLng = (store?.longitude) || userPos.lng + 0.005;
+
+  if (store && store.latitude) {
+    L.marker([store.latitude, store.longitude], { icon: L.divIcon({ html: '<div style="background:#9333ea;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;border:2px solid white;">🏪</div>', iconSize: [32,32] }) }).addTo(state.trackingMap).bindPopup(store.name);
+  }
+
+  L.marker([userPos.lat, userPos.lng], { icon: L.divIcon({ html: '<div style="background:#dc2626;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;border:2px solid white;">📍</div>', iconSize: [32,32] }) }).addTo(state.trackingMap).bindPopup('Você');
+
+  state.trackingMap.fitBounds([[startLat, startLng], [userPos.lat, userPos.lng]], { padding: [50, 50] });
+
+  if (order.motoboy_id) {
+    let progress = 0;
+    state.trackingMarker = L.marker([startLat, startLng], { icon: L.divIcon({ html: '<div class="tracking-marker" style="background:#3b82f6;width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;border:3px solid white;">🏍️</div>', iconSize: [40,40] }) }).addTo(state.trackingMap).bindPopup(order.motoboy_name);
+
+    if (state.trackingInterval) clearInterval(state.trackingInterval);
+    state.trackingInterval = setInterval(() => {
+      progress += 0.02;
+      if (progress > 1) progress = 1;
+      const lat = startLat + (userPos.lat - startLat) * progress;
+      const lng = startLng + (userPos.lng - startLng) * progress;
+      if (state.trackingMarker) state.trackingMarker.setLatLng([lat, lng]);
+      const eta = Math.max(0, Math.round((1 - progress) * 15));
+      document.getElementById('tracking-status').textContent = `Chegando em ~${eta} min`;
+      if (progress >= 1) {
+        clearInterval(state.trackingInterval);
+        document.getElementById('tracking-status').textContent = 'Chegou! 🎉';
+      }
+    }, 600);
+  } else {
+    document.getElementById('tracking-status').textContent = '⏳ Aguardando entregador';
+  }
+
+  document.getElementById('tracking-info').innerHTML = `<div class="bg-white rounded-2xl p-4"><p class="font-bold text-sm mb-2">📦 Pedido #${order.confirmation_code}</p><p class="text-xs text-gray-500">Loja: ${order.store_name}</p><p class="text-xs text-gray-500">Endereço: ${order.delivery_address}</p>${order.motoboy_name ? `<p class="text-xs text-gray-500 mt-1">🏍️ Entregador: <b>${order.motoboy_name}</b></p>` : '<p class="text-xs text-gray-400 italic mt-1">⏳ Aguardando entregador</p>'}</div>`;
+}
+
+// ============ CHAT REAL ============
+async function loadChatsList() {
+  const container = document.getElementById('chats-list-container');
+  if (!container) return;
+  if (!state.currentUser?.id) { container.innerHTML = '<p class="text-sm text-gray-400 text-center py-4">Faça login</p>'; return; }
+  try {
+    const { data } = await sb.from('chats').select('*').eq('customer_id', state.currentUser.id).order('last_at', { ascending: false });
+    allChats = data || [];
+    if (allChats.length === 0) { container.innerHTML = '<p class="text-sm text-gray-400 text-center py-4">Nenhuma conversa ainda.</p>'; return; }
+    container.innerHTML = allChats.map(c => `<div class="chat-list-item" onclick="openConversation('${c.id}')"><div class="avatar">🏪</div><div class="info"><div class="name">${c.store_name || 'Loja'}</div><div class="last-msg">${c.last_message || 'Sem mensagens'}</div></div>${c.unread_customer > 0 ? `<span class="badge">${c.unread_customer}</span>` : ''}</div>`).join('');
+  } catch(e) { container.innerHTML = ''; }
+}
+async function openConversation(chatId) {
+  state.currentChat = allChats.find(c => c.id === chatId);
+  if (!state.currentChat) return;
+  document.getElementById('conv-name').textContent = state.currentChat.store_name;
+  document.getElementById('chat-conversation-view').style.display = 'flex';
+  await loadConversationMessages();
+  await sb.from('chats').update({ unread_customer: 0 }).eq('id', chatId);
+  if (state.chatInterval) clearInterval(state.chatInterval);
+  state.chatInterval = setInterval(loadConversationMessages, 4000);
+}
+function closeConversation() { document.getElementById('chat-conversation-view').style.display = 'none'; if (state.chatInterval) clearInterval(state.chatInterval); loadChatsList(); }
+async function loadConversationMessages() {
+  if (!state.currentChat) return;
+  const { data } = await sb.from('chat_messages').select('*').eq('chat_id', state.currentChat.id).order('created_at', { ascending: true });
+  const area = document.getElementById('conv-messages');
+  area.innerHTML = (data || []).map(m => `<div class="msg ${m.sender_type === 'customer' ? 'msg-user' : 'msg-bot'}">${m.message}</div>`).join('');
+  area.scrollTop = area.scrollHeight;
+}
+async function sendConvMessage() {
+  if (!state.currentChat) return;
+  const input = document.getElementById('conv-input');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  await sb.from('chat_messages').insert({ chat_id: state.currentChat.id, sender_type: 'customer', sender_id: state.currentUser.id, sender_name: state.currentUser.full_name, message: text });
+  await sb.from('chats').update({ last_message: text, last_at: new Date().toISOString(), unread_store: (state.currentChat.unread_store || 0) + 1 }).eq('id', state.currentChat.id);
+  await loadConversationMessages();
+}
+
+// ============ NOTIF ============
+async function loadNotifications() {
+  if (!state.currentUser?.id || state.entregadorAtual) return;
+  try { const { data } = await sb.from('notifications').select('*').eq('user_id', state.currentUser.id).order('created_at', { ascending: false }).limit(30); state.allNotifs = data || []; renderNotifBadge(); renderNotifPanel(); } catch(e) {}
+}
+function renderNotifBadge() {
+  const unread = state.allNotifs.filter(n => !n.is_read).length;
+  const b = document.getElementById('notif-badge');
+  if (b) { if (unread > 0) { b.style.display = 'flex'; b.textContent = unread > 9 ? '9+' : unread; } else b.style.display = 'none'; }
+  const btn = document.getElementById('mark-all-btn');
+  if (btn) btn.style.display = unread > 0 ? 'inline' : 'none';
+}
+function renderNotifPanel() {
+  const list = document.getElementById('notif-list');
+  if (!list) return;
+  if (state.allNotifs.length === 0) { list.innerHTML = '<div class="py-10 text-center text-gray-400"><div class="text-3xl mb-2">🔔</div><p class="text-sm">Nenhuma notificação</p></div>'; return; }
+  const icons = { pedido: '🛍️', entrega: '🚴', promo: '🏷️', sistema: 'ℹ️' };
+  list.innerHTML = state.allNotifs.map(n => `<div onclick="markNotifRead('${n.id}')" style="display:flex;gap:12px;padding:12px 16px;cursor:pointer;" class="${!n.is_read ? 'bg-blue-50' : ''}"><div style="width:32px;height:32px;border-radius:50%;background:#f3f4f6;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${icons[n.type] || 'ℹ️'}</div><div style="flex:1;min-width:0;"><p class="text-xs font-bold truncate">${n.title}</p><p class="text-xs text-gray-400" style="white-space:pre-line;">${n.message}</p></div></div>`).join('');
+}
+function toggleNotifPanel() { const p = document.getElementById('notif-panel-global'); if (!p) return; p.style.display = p.style.display === 'none' ? 'block' : 'none'; }
+async function markNotifRead(id) { const n = state.allNotifs.find(x => x.id === id); if (!n || n.is_read) return; n.is_read = true; try { await sb.from('notifications').update({ is_read: true }).eq('id', id); } catch(e) {} renderNotifBadge(); renderNotifPanel(); }
+async function markAllRead() { const unread = state.allNotifs.filter(n => !n.is_read); unread.forEach(n => n.is_read = true); await Promise.all(unread.map(n => sb.from('notifications').update({ is_read: true }).eq('id', n.id))); renderNotifBadge(); renderNotifPanel(); }
+async function requestNotificationPermission() { if (!('Notification' in window)) return false; if (Notification.permission === 'granted') return true; if (Notification.permission !== 'denied') { const p = await Notification.requestPermission(); return p === 'granted'; } return false; }
+
+// ============ LOCATION ============
+function showLocationModal() { if (state.locationPermissionAsked) return; state.locationPermissionAsked = true; document.getElementById('location-modal').style.display = 'flex'; }
+function allowLocation() { document.getElementById('location-modal').style.display = 'none'; startLocationTracking(); }
+function denyLocation() { document.getElementById('location-modal').style.display = 'none'; }
+function showNotificationModal() { if (state.notificationPermissionAsked) return; state.notificationPermissionAsked = true; document.getElementById('notif-modal').style.display = 'flex'; }
+async function allowNotification() { document.getElementById('notif-modal').style.display = 'none'; await requestNotificationPermission(); }
+function denyNotification() { document.getElementById('notif-modal').style.display = 'none'; }
+function startLocationTracking() { if (!navigator.geolocation) return; navigator.geolocation.getCurrentPosition(pos => { state.userLocation = { lat: pos.coords.latitude, lng: pos.coords.longitude }; }, () => {}, { enableHighAccuracy: true, timeout: 10000 }); }
+
+// ============ MÚSICAS ============
+async function openMusicChat() { document.getElementById('chat-list-view').style.display = 'none'; document.getElementById('chat-ai-view').style.display = 'none'; document.getElementById('music-view').style.display = 'flex'; await loadMusicList(); updateMusicUI(); }
+function closeMusicChat() { document.getElementById('music-view').style.display = 'none'; document.getElementById('chat-list-view').style.display = 'block'; }
+async function loadMusicList() {
+  const container = document.getElementById('music-list-container');
+  if (!container) return;
+  container.innerHTML = '<div class="flex justify-center py-6"><div class="w-6 h-6 border-2 border-purple-600 border-t-transparent rounded-full animate-spin"></div></div>';
+  try {
+    const { data } = await sb.from('app_music').select('*').order('created_at', { ascending: false });
+    allMusic = data || [];
+    if (allMusic.length === 0) { container.innerHTML = '<div class="bg-white rounded-2xl p-6 text-center"><p class="text-gray-400 text-sm">🎵 Nenhuma música</p></div>'; return; }
+    container.innerHTML = allMusic.map((m, idx) => `<div class="music-item ${currentMusicId === m.id ? 'playing' : ''}" onclick="playMusic('${m.id}')"><div class="music-icon">${currentMusicId === m.id ? '<div class="music-wave"><span></span><span></span><span></span><span></span></div>' : (idx + 1)}</div><div class="flex-1 min-w-0"><p class="font-bold text-sm truncate">${m.title}</p><p class="music-meta truncate">${m.artist || 'Sem artista'}</p></div></div>`).join('');
+  } catch(e) {}
+}
+async function playMusic(id) {
+  const music = allMusic.find(m => m.id === id);
+  if (!music) return;
+  const audio = document.getElementById('bg-audio');
+  if (currentMusicId === id && !audio.paused) { audio.pause(); updateMusicUI(); return; }
+  currentMusicId = id; currentMusicIndex = allMusic.findIndex(m => m.id === id);
+  audio.src = music.url; audio.volume = 0.6;
+  try { await audio.play(); updateMusicUI(); document.getElementById('mini-title').textContent = music.title; document.getElementById('mini-artist').textContent = music.artist || '—'; document.getElementById('music-mini-player').style.display = 'flex'; await loadMusicList(); } catch(e) { showToast('Erro', 'error'); }
+}
+function updateMusicUI() {
+  const audio = document.getElementById('bg-audio');
+  const btnPlay = document.getElementById('btn-play-pause');
+  const music = allMusic.find(m => m.id === currentMusicId);
+  const np = document.getElementById('music-now-playing');
+  if (np) { if (music && currentMusicId) { np.style.display = 'flex'; document.getElementById('music-current-title').textContent = music.title; document.getElementById('music-current-artist').textContent = music.artist || '—'; } else { np.style.display = 'none'; } }
+  if (btnPlay) btnPlay.textContent = audio.paused ? '▶' : '⏸';
+  const s = document.getElementById('btn-shuffle'); if (s) s.style.background = musicShuffle ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.15)';
+  const r = document.getElementById('btn-repeat'); if (r) r.style.background = musicRepeat ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.15)';
+  const mini = document.getElementById('music-mini-player'); if (mini) mini.style.display = (music && currentMusicId) ? 'flex' : 'none';
+  document.body.classList.toggle('music-playing', !!(music && currentMusicId));
+}
+function togglePlayPause() { const a = document.getElementById('bg-audio'); if (!currentMusicId) { if (allMusic.length > 0) playMusic(allMusic[0].id); return; } if (a.paused) a.play().then(updateMusicUI); else { a.pause(); updateMusicUI(); } }
+function prevMusic() { if (allMusic.length === 0) return; let i = musicShuffle ? Math.floor(Math.random() * allMusic.length) : (currentMusicIndex - 1 + allMusic.length) % allMusic.length; playMusic(allMusic[i].id); }
+function nextMusic() { if (allMusic.length === 0) return; let i = musicShuffle ? Math.floor(Math.random() * allMusic.length) : (currentMusicIndex + 1) % allMusic.length; playMusic(allMusic[i].id); }
+function toggleShuffle() { musicShuffle = !musicShuffle; showToast(musicShuffle ? '🔀' : 'Normal', 'default'); updateMusicUI(); }
+function toggleRepeat() { musicRepeat = !musicRepeat; document.getElementById('bg-audio').loop = musicRepeat; showToast(musicRepeat ? '🔁' : 'Normal', 'default'); updateMusicUI(); }
+function stopMusic() { const a = document.getElementById('bg-audio'); a.pause(); a.currentTime = 0; currentMusicId = null; currentMusicIndex = -1; updateMusicUI(); }
+document.getElementById('bg-audio').addEventListener('ended', () => { if (musicRepeat) return; if (allMusic.length > 1) nextMusic(); else updateMusicUI(); });
+
+// ============ PERFIL ============
+function renderProfileHeader() {
+  document.getElementById('profile-name').textContent = state.entregadorAtual?.full_name || state.currentUser?.full_name || 'Usuário';
+  document.getElementById('profile-email').textContent = state.entregadorAtual ? 'Entregador 🏍️' : (state.currentUser?.email || '');
+  document.getElementById('profile-avatar').textContent = state.entregadorAtual ? '🏍️' : '👤';
+  const adminBtn = document.getElementById('tab-btn-admin');
+  if (state.currentUser?.email === 'huagnermarques@gmail.com' && !state.entregadorAtual) adminBtn.style.display = 'flex';
+  else adminBtn.style.display = 'none';
+  document.getElementById('tab-btn-entregador').style.display = state.entregadorAtual ? 'flex' : 'none';
+}
+function setProfileTab(tab) {
+  state.profileTab = tab; state.selectedStoreId = null; state.lojistaView = 'produtos';
+  const btns = { cliente: document.getElementById('tab-btn-cliente'), lojista: document.getElementById('tab-btn-lojista'), entregador: document.getElementById('tab-btn-entregador'), admin: document.getElementById('tab-btn-admin'), sobre: document.getElementById('tab-btn-sobre') };
+  Object.values(btns).forEach(btn => { if (btn) btn.className = 'profile-tab profile-tab-inactive'; });
+  if (btns[tab]) btns[tab].className = 'profile-tab profile-tab-active';
+  renderProfileTab();
+  if (tab === 'lojista') loadMyStores();
+  if (tab === 'entregador' && state.entregadorAtual) loadEntregadorDeliveries();
+  if (tab === 'admin') renderAdminContent();
+  if (tab === 'sobre') renderSobreContent();
+}
+const CATEGORY_EMOJIS = { restaurante: '🍔', mercado: '🛒', farmacia: '💊', acai: '🍇', padaria: '🍞', pet: '🐾', outros: '📦' };
+function renderProfileTab() {
+  const el = document.getElementById('profile-tab-content');
+  if (state.profileTab === 'cliente') {
+    el.innerHTML = `<div class="bg-white shadow-sm rounded-2xl p-4"><h3 class="font-bold text-sm">🧑 Perfil Cliente</h3></div><div class="bg-white shadow-sm rounded-2xl p-4"><p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-3">SEUS DADOS</p><div class="space-y-2"><div class="flex justify-between text-sm"><span class="text-gray-400">Nome</span><span class="font-semibold">${state.currentUser?.full_name || '—'}</span></div><div class="flex justify-between text-sm"><span class="text-gray-400">E-mail</span><span class="font-semibold text-xs truncate max-w-[180px]">${state.currentUser?.email || '—'}</span></div></div></div><button onclick="navigate('orders')" class="flex items-center gap-3 bg-white shadow-sm rounded-2xl p-4 w-full text-left"><div class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">📋</div><div><p class="font-bold text-sm">Meus Pedidos</p><p class="text-xs text-gray-400">Código de entrega</p></div></button><div class="bg-white shadow-sm rounded-2xl p-4"><div class="flex items-center justify-between mb-2"><span class="font-bold text-sm">🌙 Modo escuro</span><div class="dark-toggle" onclick="toggleDarkMode()"></div></div></div>`;
+  } else if (state.profileTab === 'lojista') {
+    if (state.selectedStoreId) renderLojistaProductPanel(el); else renderLojistaStoreList(el);
+  } else if (state.profileTab === 'entregador') {
+    renderEntregadorTab(el);
+  } else if (state.profileTab === 'admin') {
+    el.innerHTML = `<div class="bg-white shadow-sm rounded-2xl p-4"><h3 class="font-bold text-sm">🛡️ Painel Administrativo</h3></div><div id="admin-content" class="space-y-4">Carregando...</div>`;
+    renderAdminContent();
+  } else if (state.profileTab === 'sobre') {
+    el.innerHTML = `<div id="sobre-content" class="space-y-4"></div>`;
+    renderSobreContent();
+  }
+}
+
+// ============ ENTREGADOR (com RPC) ============
+function renderEntregadorTab(el) {
+  if (!state.entregadorAtual) { el.innerHTML = '<p class="text-gray-400 text-center py-8">Acesso negado.</p>'; return; }
+  const e = state.entregadorAtual;
+  el.innerHTML = `<div class="bg-white shadow-sm rounded-2xl p-4"><div class="flex items-center gap-3"><div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center text-2xl">🏍️</div><div class="flex-1"><h3 class="font-bold text-sm">${e.full_name}</h3><p class="text-xs text-gray-400">${e.phone || ''} · ${e.modelo_moto || ''}</p></div><span class="text-[10px] font-bold bg-green-100 text-green-700 px-2 py-1 rounded-full">● Online</span></div></div><div class="flex gap-2 mb-3"><button onclick="setEntregadorView('disponiveis')" id="ent-view-disp" class="flex-1 py-2.5 text-sm font-bold rounded-full ${state.entregadorView === 'disponiveis' ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-700'}">📦 Disponíveis</button><button onclick="setEntregadorView('minhas')" id="ent-view-minhas" class="flex-1 py-2.5 text-sm font-bold rounded-full ${state.entregadorView === 'minhas' ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-700'}">🏍️ Minhas</button></div><div id="entregador-content"></div>`;
+  loadEntregadorDeliveries();
+}
+function setEntregadorView(v) {
+  state.entregadorView = v;
+  const bd = document.getElementById('ent-view-disp'); const bm = document.getElementById('ent-view-minhas');
+  if (bd) bd.className = `flex-1 py-2.5 text-sm font-bold rounded-full ${v === 'disponiveis' ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-700'}`;
+  if (bm) bm.className = `flex-1 py-2.5 text-sm font-bold rounded-full ${v === 'minhas' ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-700'}`;
+  renderEntregadorContent();
+}
+async function loadEntregadorDeliveries() {
+  if (!state.entregadorAtual) return;
+  const container = document.getElementById('entregador-content');
+  if (!container) return;
+  container.innerHTML = '<div class="flex justify-center py-8"><div class="w-6 h-6 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div></div>';
+  try {
+    const uid = state.entregadorAtual.id;
+    const { data, error } = await sb.rpc('listar_entregas_entregador', { entregador_id: uid });
+    if (error) throw error;
+    entregadorOrders = Array.isArray(data) ? data : [];
+    renderEntregadorContent();
+  } catch(e) {
+    console.error('Erro entregador:', e);
+    container.innerHTML = `<div class="bg-white shadow-sm rounded-2xl p-4"><p class="text-red-500 text-sm">Erro: ${e.message}</p></div>`;
+  }
+}
+function renderEntregadorContent() {
+  const container = document.getElementById('entregador-content');
+  if (!container) return;
+  const uid = state.entregadorAtual.id;
+  const view = state.entregadorView || 'disponiveis';
+  let filtered = view === 'disponiveis' ? entregadorOrders.filter(o => o.status === 'saiu' && !o.motoboy_id) : entregadorOrders.filter(o => o.motoboy_id === uid);
+  let statsHtml = '';
+  if (view === 'minhas') {
+    const today = new Date().toDateString();
+    const todayDelivered = filtered.filter(o => o.status === 'entregue' && new Date(o.created_at).toDateString() === today);
+    const earnings = todayDelivered.reduce((s, o) => s + (o.delivery_fee || 5), 0);
+    statsHtml = `<div class="grid grid-cols-3 gap-2 mb-3"><div class="stat-card"><div class="stat-value">${todayDelivered.length}</div><div class="stat-label">Hoje</div></div><div class="stat-card"><div class="stat-value">R$ ${fmt(earnings)}</div><div class="stat-label">Ganhos</div></div><div class="stat-card"><div class="stat-value">${filtered.length}</div><div class="stat-label">Total</div></div></div>`;
+  }
+  if (filtered.length === 0) { container.innerHTML = statsHtml + `<div class="bg-white shadow-sm rounded-2xl p-8 text-center"><div class="text-5xl mb-3">${view === 'disponiveis' ? '📭' : '🏍️'}</div><p class="text-gray-400">${view === 'disponiveis' ? 'Nenhuma entrega.' : 'Você ainda não aceitou.'}</p></div>`; return; }
+  let html = statsHtml + '<div class="space-y-3">';
+  filtered.forEach(o => {
+    const itemsList = (o.order_items || []).map(i => `${i.quantity}x ${i.name}`).join(', ');
+    const isMine = o.motoboy_id === uid;
+    const borderColor = view === 'disponiveis' ? '#eab308' : (o.status === 'entregue' ? '#22c55e' : '#3b82f6');
+    html += `<div class="delivery-card" style="border-left: 4px solid ${borderColor};"><div class="flex justify-between items-start mb-2"><div><p class="font-bold text-sm">${o.store_name}</p><p class="text-xs text-gray-400">Cliente: ${o.customer_name || 'Cliente'}</p></div>${isMine ? (o.status === 'entregue' ? '✅' : '🚴') : '🆕'}</div><div class="text-xs text-gray-600 space-y-1 mt-2"><p><strong>🛍️</strong> ${itemsList}</p><p><strong>💰</strong> R$ ${fmt(o.total)}</p><p><strong>📍</strong> ${o.delivery_address || 'Não informado'}</p></div>${!isMine ? `<button onclick="acceptDelivery('${o.id}')" class="w-full mt-3 bg-red-600 text-white text-sm font-bold px-4 py-3 rounded-full">✅ Aceitar</button>` : ''}${isMine && o.status === 'saiu' ? `<button onclick="openConfirmCodeModal('${o.id}', '${o.confirmation_code}')" class="w-full mt-3 bg-green-600 text-white text-xs font-bold px-4 py-3 rounded-full">🔑 Confirmar</button>` : ''}</div>`;
+  });
+  container.innerHTML = html + '</div>';
+}
+async function acceptDelivery(orderId) {
+  if (!state.entregadorAtual) return;
+  if (!confirm('Aceitar?')) return;
+  try {
+    const { data, error } = await sb.rpc('aceitar_entrega', {
+      order_id: orderId,
+      entregador_id: state.entregadorAtual.id,
+      entregador_nome: state.entregadorAtual.full_name
+    });
+    if (error) throw error;
+    if (!data) { showToast('Entrega já foi aceita por outro entregador.', 'error'); await loadEntregadorDeliveries(); return; }
+    const order = entregadorOrders.find(o => o.id === orderId);
+    if (order && order.customer_id) {
+      await sb.from('notifications').insert({
+        user_id: order.customer_id,
+        title: '🚴 Entregador a caminho!',
+        message: `${state.entregadorAtual.full_name} está indo entregar seu pedido.`,
+        type: 'entrega', is_read: false, created_at: new Date().toISOString()
+      });
+    }
+    showToast('✅ Aceita!', 'success');
+    state.entregadorView = 'minhas';
+    setEntregadorView('minhas');
+  } catch (err) { showToast('Erro: ' + err.message, 'error'); }
+}
+function openConfirmCodeModal(orderId, code) {
+  pendingDeliveryOrder = orderId; pendingDeliveryCode = code;
+  const input = document.getElementById('delivery-code-input'); const err = document.getElementById('delivery-code-error');
+  input.value = ''; err.style.display = 'none';
+  document.getElementById('delivery-code-modal').style.display = 'flex';
+  setTimeout(() => input.focus(), 200);
+}
+function closeDeliveryCodeModal() { document.getElementById('delivery-code-modal').style.display = 'none'; pendingDeliveryOrder = null; pendingDeliveryCode = null; }
+async function validateDeliveryCode() {
+  const input = document.getElementById('delivery-code-input'); const err = document.getElementById('delivery-code-error');
+  const typed = (input.value || '').trim();
+  if (typed.length !== 4) { err.textContent = '4 dígitos'; err.style.display = 'block'; input.focus(); return; }
+  if (typed !== pendingDeliveryCode) { err.textContent = '❌ Errado'; err.style.display = 'block'; input.value = ''; input.focus(); return; }
+  const orderId = pendingDeliveryOrder;
+  const order = entregadorOrders.find(o => o.id === orderId);
+  closeDeliveryCodeModal();
+  try {
+    const { error } = await sb.rpc('concluir_entrega', { order_id: orderId });
+    if (error) throw error;
+    if (order && order.customer_id) {
+      await sb.from('notifications').insert({
+        user_id: order.customer_id,
+        title: '✅ Entregue!',
+        message: `Pedido entregue! Avalie a loja.`,
+        type: 'entrega', is_read: false, created_at: new Date().toISOString()
+      });
+    }
+    showToast('✅ OK!', 'success'); await loadEntregadorDeliveries();
+  } catch(e) { showToast('Erro', 'error'); }
+}
+
+// ============ LOJISTA ============
+function renderLojistaStoreList(el) {
+  el.innerHTML = `
+    <div class="bg-white shadow-sm rounded-2xl p-4"><h3 class="font-bold text-sm">🏪 Minhas Lojas</h3></div>
+    <div class="bg-white shadow-sm rounded-2xl p-5 space-y-4">
+      <div><h3 class="font-bold text-base mb-1">➕ Cadastrar Nova Loja</h3><p class="text-xs text-gray-400">Preencha os dados da sua loja</p></div>
+      <div><label class="text-sm font-semibold block mb-1">Nome da Loja *</label><input id="store-name" type="text" placeholder="Ex: Açaí do João" class="w-full h-12 px-4 text-base rounded-2xl" style="background:var(--bg) !important; color:var(--text) !important;" /></div>
+      <div><label class="text-sm font-semibold block mb-1">Descrição</label><textarea id="store-desc" placeholder="Descreva sua loja..." class="w-full h-20 px-4 py-3 text-base rounded-2xl resize-none" style="background:var(--bg) !important; color:var(--text) !important;"></textarea></div>
+      <div><label class="text-sm font-semibold block mb-1">Categoria</label><select id="store-cat" class="w-full h-12 px-4 text-base rounded-2xl" style="background:var(--bg); color:var(--text);"><option value="restaurante">🍔 Restaurante</option><option value="mercado">🛒 Mercado</option><option value="farmacia">💊 Farmácia</option><option value="acai">🍇 Açaí</option><option value="padaria">🍞 Padaria</option><option value="pet">🐾 Pet</option><option value="outros">📦 Outros</option></select></div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="text-sm font-semibold block mb-1">Taxa (R$)</label><input id="store-fee" type="number" step="0.01" min="0" value="0" class="w-full h-12 px-4 text-base rounded-2xl" style="background:var(--bg) !important; color:var(--text) !important;" /></div>
+        <div><label class="text-sm font-semibold block mb-1">Raio</label><input id="store-radius" type="text" placeholder="Ex: 5km" class="w-full h-12 px-4 text-base rounded-2xl" style="background:var(--bg) !important; color:var(--text) !important;" /></div>
+      </div>
+      <div>
+        <label class="text-sm font-semibold block mb-2">📍 Localização (opcional)</label>
+        <div class="grid grid-cols-2 gap-3">
+          <input id="store-lat" type="text" placeholder="Latitude" readonly class="w-full h-11 px-3 text-sm rounded-xl" style="background:var(--bg) !important; color:var(--text) !important; overflow:hidden; text-overflow:ellipsis; min-width:0;" />
+          <input id="store-lng" type="text" placeholder="Longitude" readonly class="w-full h-11 px-3 text-sm rounded-xl" style="background:var(--bg) !important; color:var(--text) !important; overflow:hidden; text-overflow:ellipsis; min-width:0;" />
+        </div>
+        <button type="button" onclick="getCurrentPositionForCadastro((lat,lng)=>{ document.getElementById('store-lat').value=lat; document.getElementById('store-lng').value=lng; })" class="mt-2 w-full py-3 bg-red-600 text-white text-sm font-semibold rounded-xl">📍 Usar minha localização</button>
+      </div>
+      <div class="switch-container"><label class="switch"><input type="checkbox" id="store-is-open" checked><span class="slider"></span></label><span class="switch-label">Loja aberta</span></div>
+      <button onclick="saveStoreWithLocation()" class="w-full h-12 font-bold bg-red-600 text-white text-base rounded-2xl">Cadastrar Loja</button>
+    </div>
+    <div id="my-stores-list"></div>
+  `;
+  renderMyStoresList();
+}
+function renderMyStoresList() {
+  const container = document.getElementById('my-stores-list');
+  if (!container) return;
+  if (!myStores || myStores.length === 0) { container.innerHTML = '<div class="bg-white shadow-sm rounded-2xl p-4 text-center"><p class="text-gray-400 text-sm">Nenhuma loja cadastrada.</p></div>'; return; }
+  let html = '<div class="space-y-3">';
+  myStores.forEach(store => {
+    const prods = myStoreProducts[store.id] || [];
+    const drivers = myDrivers[store.id] || [];
+    html += `<div class="lojista-store-card" onclick="selectLojistaStore('${store.id}')"><div class="flex items-center gap-3"><div class="w-10 h-10 rounded-xl flex items-center justify-center text-xl overflow-hidden" style="background:var(--bg);">${store.banner_url ? `<img src="${store.banner_url}" class="w-full h-full object-cover" />` : (store.emoji || '🏪')}</div><div class="flex-1 min-w-0"><p class="font-bold text-sm truncate">${store.name}</p><p class="text-xs text-gray-400">${prods.length} prod · ${drivers.length} entreg · ${store.is_open ? '🟢' : '🔴'}</p></div><span class="text-red-500 text-sm">→</span></div></div>`;
+  });
+  container.innerHTML = html + '</div>';
+}
+function selectLojistaStore(storeId) { state.selectedStoreId = storeId; state.lojistaView = 'produtos'; storeOrders = []; renderProfileTab(); }
+function renderLojistaProductPanel(el) {
+  const store = myStores.find(s => s.id === state.selectedStoreId);
+  if (!store) { state.selectedStoreId = null; renderProfileTab(); return; }
+  el.innerHTML = `<div class="flex items-center gap-2 mb-2"><button onclick="goBackLojista()" class="back-btn-card">← Voltar</button><span class="font-bold text-sm">${store.emoji} ${store.name}</span></div><div class="flex gap-2 mb-3 overflow-x-auto scrollbar-hide"><button onclick="setLojistaView('produtos')" id="lojista-view-produtos" class="px-3 py-2 text-xs font-bold rounded-full whitespace-nowrap ${state.lojistaView === 'produtos' ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-700'}">📦 Produtos</button><button onclick="setLojistaView('pedidos')" id="lojista-view-pedidos" class="px-3 py-2 text-xs font-bold rounded-full whitespace-nowrap ${state.lojistaView === 'pedidos' ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-700'}">📋 Pedidos</button><button onclick="setLojistaView('entregadores')" id="lojista-view-entregadores" class="px-3 py-2 text-xs font-bold rounded-full whitespace-nowrap ${state.lojistaView === 'entregadores' ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-700'}">🏍️ Entregadores</button><button onclick="setLojistaView('cupons')" id="lojista-view-cupons" class="px-3 py-2 text-xs font-bold rounded-full whitespace-nowrap ${state.lojistaView === 'cupons' ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-700'}">🏷️ Cupons</button><button onclick="setLojistaView('dashboard')" id="lojista-view-dashboard" class="px-3 py-2 text-xs font-bold rounded-full whitespace-nowrap ${state.lojistaView === 'dashboard' ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-700'}">📊 Dashboard</button></div><div id="lojista-view-content"></div>`;
+  setLojistaView(state.lojistaView, true);
+}
+function setLojistaView(view) {
+  state.lojistaView = view;
+  const store = myStores.find(s => s.id === state.selectedStoreId);
+  if (!store) return;
+  const container = document.getElementById('lojista-view-content');
+  if (!container) return;
+  ['produtos', 'pedidos', 'entregadores', 'cupons', 'dashboard'].forEach(v => {
+    const btn = document.getElementById('lojista-view-' + v);
+    if (btn) btn.className = `px-3 py-2 text-xs font-bold rounded-full whitespace-nowrap ${view === v ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-700'}`;
+  });
+  if (view === 'produtos') container.innerHTML = renderLojistaProdutosHTML(store, myStoreProducts[store.id] || []);
+  else if (view === 'pedidos') { container.innerHTML = '<div class="flex justify-center py-8"><div class="w-6 h-6 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div></div>'; loadStoreOrders(store.id); }
+  else if (view === 'entregadores') container.innerHTML = renderLojistaEntregadoresHTML(store);
+  else if (view === 'cupons') loadStoreCoupons(store.id);
+  else if (view === 'dashboard') loadStoreDashboard(store.id);
+}
+function renderLojistaProdutosHTML(store, prods) {
+  return `
+    <div class="bg-white shadow-sm rounded-2xl p-4 mb-3">
+      <h3 class="font-bold text-sm mb-3">📦 Produtos (${prods.length})</h3>
+      <div class="space-y-2">${prods.length === 0 ? '<p class="text-sm text-gray-400 text-center py-4">Nenhum produto.</p>' : prods.map(p => `<div class="product-card"><div class="w-8 h-8 bg-red-50 rounded-full flex items-center justify-center text-base">${p.emoji || '📦'}</div><div class="flex-1 min-w-0"><p class="font-semibold text-sm truncate">${p.name} <span class="text-[10px] text-gray-400">[${p.category || 'Geral'}]</span></p><p class="text-xs text-gray-400">R$ ${fmt(p.price)} · Estoque: ${p.stock || 0}${Array.isArray(p.options) && p.options.length > 0 ? ` · ${p.options.length} opções` : ''}</p></div><button onclick="deleteProduct('${p.id}')" class="text-xs text-red-500 font-semibold px-2">Excluir</button></div>`).join('')}</div>
+    </div>
+    <div class="bg-white shadow-sm rounded-2xl p-5 space-y-4">
+      <div><h3 class="font-bold text-base mb-1">➕ Adicionar Produto</h3><p class="text-xs text-gray-400">Preencha os dados abaixo</p></div>
+      <div><label class="text-sm font-semibold block mb-1">Nome do produto *</label><input id="prod-name-${store.id}" type="text" placeholder="Ex: Açaí 500ml com granola" class="w-full h-12 px-4 text-base rounded-2xl" style="background:var(--bg) !important; color:var(--text) !important;" /></div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="text-sm font-semibold block mb-1">Emoji</label><input id="prod-emoji-${store.id}" type="text" placeholder="🍇" maxlength="2" class="w-full h-12 px-4 text-base text-center rounded-2xl" style="background:var(--bg) !important; color:var(--text) !important;" /></div>
+        <div><label class="text-sm font-semibold block mb-1">Categoria</label><input id="prod-cat-${store.id}" type="text" placeholder="Bebidas" class="w-full h-12 px-4 text-base rounded-2xl" style="background:var(--bg) !important; color:var(--text) !important;" /></div>
+      </div>
+      <div><label class="text-sm font-semibold block mb-1">Descrição</label><textarea id="prod-desc-${store.id}" placeholder="Ex: Açaí cremoso com granola e banana" class="w-full h-20 px-4 py-3 text-base rounded-2xl resize-none" style="background:var(--bg) !important; color:var(--text) !important;"></textarea></div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="text-sm font-semibold block mb-1">Preço (R$) *</label><input id="prod-price-${store.id}" type="number" step="0.01" min="0" placeholder="0,00" class="w-full h-12 px-4 text-base rounded-2xl" style="background:var(--bg) !important; color:var(--text) !important;" /></div>
+        <div><label class="text-sm font-semibold block mb-1">Estoque</label><input id="prod-stock-${store.id}" type="number" min="0" placeholder="10" class="w-full h-12 px-4 text-base rounded-2xl" style="background:var(--bg) !important; color:var(--text) !important;" /></div>
+      </div>
+      <div style="background: var(--bg); border-radius: 16px; padding: 14px;">
+        <p class="text-sm font-semibold mb-2">🍔 Adicional (opcional)</p>
+        <div class="grid grid-cols-2 gap-3">
+          <input id="prod-opts-name-${store.id}" type="text" placeholder="Bacon extra" class="w-full h-11 px-4 text-sm rounded-xl" style="background:var(--card) !important; color:var(--text) !important;" />
+          <input id="prod-opts-price-${store.id}" type="number" step="0.01" min="0" placeholder="R$ 3,00" class="w-full h-11 px-4 text-sm rounded-xl" style="background:var(--card) !important; color:var(--text) !important;" />
+        </div>
+      </div>
+      <button onclick="saveProduct('${store.id}')" class="w-full h-12 font-bold bg-red-600 text-white text-base rounded-2xl">Adicionar Produto</button>
+    </div>
+  `;
+}
+function renderLojistaEntregadoresHTML(store) {
+  const drivers = myDrivers[store.id] || [];
+  return `
+    <div class="bg-white shadow-sm rounded-2xl p-4 mb-3">
+      <h3 class="font-bold text-sm mb-3">🏍️ Entregadores (${drivers.length})</h3>
+      <div class="space-y-2">${drivers.length === 0 ? '<p class="text-sm text-gray-400 text-center py-4">Nenhum entregador.</p>' : drivers.map(d => `<div class="product-card"><div class="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center text-lg">🏍️</div><div class="flex-1 min-w-0"><p class="font-semibold text-sm truncate">${d.full_name}</p><p class="text-xs text-gray-400">${d.phone || ''} · ${d.modelo_moto || ''}</p></div><button onclick="deleteDriver('${d.id}')" class="text-xs text-red-500 font-semibold px-2">Excluir</button></div>`).join('')}</div>
+    </div>
+    <div class="bg-white shadow-sm rounded-2xl p-5 space-y-4">
+      <h3 class="font-bold text-base mb-1">➕ Adicionar Entregador</h3>
+      <div><label class="text-sm font-semibold block mb-1">Nome completo *</label><input id="drv-name-${store.id}" type="text" placeholder="Nome" class="w-full h-12 px-4 text-base rounded-2xl" style="background:var(--bg) !important; color:var(--text) !important;" /></div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="text-sm font-semibold block mb-1">Telefone *</label><input id="drv-phone-${store.id}" type="tel" placeholder="(11) 99999-9999" class="w-full h-12 px-4 text-base rounded-2xl" style="background:var(--bg) !important; color:var(--text) !important;" /></div>
+        <div><label class="text-sm font-semibold block mb-1">CPF</label><input id="drv-cpf-${store.id}" type="text" placeholder="000.000.000-00" class="w-full h-12 px-4 text-base rounded-2xl" style="background:var(--bg) !important; color:var(--text) !important;" /></div>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div><label class="text-sm font-semibold block mb-1">Modelo moto</label><input id="drv-model-${store.id}" type="text" placeholder="Honda Fan" class="w-full h-12 px-4 text-base rounded-2xl" style="background:var(--bg) !important; color:var(--text) !important;" /></div>
+        <div><label class="text-sm font-semibold block mb-1">Placa</label><input id="drv-placa-${store.id}" type="text" placeholder="ABC-1234" class="w-full h-12 px-4 text-base rounded-2xl" style="background:var(--bg) !important; color:var(--text) !important;" /></div>
+      </div>
+      <button onclick="saveDriver('${store.id}')" class="w-full h-12 font-bold bg-red-600 text-white text-base rounded-2xl">Adicionar Entregador</button>
+    </div>
+  `;
+}
+async function loadStoreCoupons(storeId) {
+  const container = document.getElementById('lojista-view-content');
+  if (!container) return;
+  container.innerHTML = '<div class="flex justify-center py-8"><div class="w-6 h-6 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div></div>';
+  try {
+    const { data } = await sb.from('coupons').select('*').eq('store_id', storeId).order('created_at', { ascending: false });
+    const coupons = data || [];
+    container.innerHTML = `<div class="bg-white shadow-sm rounded-2xl p-4 mb-3"><div class="flex items-center justify-between mb-3"><h3 class="font-bold text-sm">🏷️ Cupons (${coupons.length})</h3><button onclick="openCouponModal('${storeId}')" class="bg-red-600 text-white text-xs font-bold px-3 py-2 rounded-full">+ Novo</button></div><div class="space-y-2">${coupons.length === 0 ? '<p class="text-sm text-gray-400 text-center py-4">Nenhum cupom.</p>' : coupons.map(c => `<div class="product-card"><div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center text-lg">🏷️</div><div class="flex-1 min-w-0"><p class="font-bold text-sm">${c.code}</p><p class="text-xs text-gray-400">${c.discount_type === 'percent' ? c.discount_value + '%' : 'R$ ' + fmt(c.discount_value)} off · ${c.uses}/${c.max_uses} usos</p></div><button onclick="deleteCoupon('${c.id}', '${storeId}')" class="text-xs text-red-500 font-semibold px-2">Excluir</button></div>`).join('')}</div></div>`;
+  } catch(e) { container.innerHTML = `<p class="text-red-500 text-sm">Erro: ${e.message}</p>`; }
+}
+function openCouponModal(storeId) {
+  document.getElementById('coupon-code').value = ''; document.getElementById('coupon-value').value = '';
+  document.getElementById('coupon-min').value = '0'; document.getElementById('coupon-max-uses').value = '100';
+  document.getElementById('coupon-code').dataset.storeId = storeId;
+  document.getElementById('coupon-modal').style.display = 'flex';
+}
+function closeCouponModal() { document.getElementById('coupon-modal').style.display = 'none'; }
+async function saveCoupon() {
+  const storeId = document.getElementById('coupon-code').dataset.storeId;
+  const code = document.getElementById('coupon-code').value.trim().toUpperCase();
+  const type = document.getElementById('coupon-type').value;
+  const value = parseFloat(document.getElementById('coupon-value').value);
+  const minOrder = parseFloat(document.getElementById('coupon-min').value) || 0;
+  const maxUses = parseInt(document.getElementById('coupon-max-uses').value) || 100;
+  if (!code || isNaN(value) || value <= 0) { showToast('Preencha código e valor', 'error'); return; }
+  try { const { error } = await sb.from('coupons').insert({ store_id: storeId, code, discount_type: type, discount_value: value, min_order: minOrder, max_uses: maxUses, active: true }); if (error) throw error; showToast('✅ Criado!', 'success'); closeCouponModal(); loadStoreCoupons(storeId); } catch(e) { showToast('Erro: ' + e.message, 'error'); }
+}
+async function deleteCoupon(id, storeId) { if (!confirm('Excluir?')) return; try { await sb.from('coupons').delete().eq('id', id); showToast('Excluído', 'success'); loadStoreCoupons(storeId); } catch(e) { showToast('Erro', 'error'); } }
+async function loadStoreDashboard(storeId) {
+  const container = document.getElementById('lojista-view-content');
+  if (!container) return;
+  container.innerHTML = '<div class="flex justify-center py-8"><div class="w-6 h-6 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div></div>';
+  try {
+    const { data: orders } = await sb.from('orders').select('*, order_items(name, quantity)').eq('store_id', storeId).order('created_at', { ascending: false });
+    const all = orders || [];
+    const now = new Date();
+    const today = all.filter(o => new Date(o.created_at).toDateString() === now.toDateString());
+    const thisMonth = all.filter(o => { const d = new Date(o.created_at); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); });
+    const delivered = all.filter(o => o.status === 'entregue');
+    const totalRevenue = delivered.reduce((s, o) => s + (o.total || 0), 0);
+    const todayRevenue = today.reduce((s, o) => s + (o.total || 0), 0);
+    const monthRevenue = thisMonth.reduce((s, o) => s + (o.total || 0), 0);
+    const ticket = delivered.length > 0 ? totalRevenue / delivered.length : 0;
+    const prodCount = {};
+    all.forEach(o => (o.order_items || []).forEach(i => { prodCount[i.name] = (prodCount[i.name] || 0) + i.quantity; }));
+    const topProds = Object.entries(prodCount).sort((a, b) => b[1] - a[1]).slice(0, 5);
+    container.innerHTML = `<div class="grid grid-cols-2 gap-2 mb-3"><div class="stat-card"><div class="stat-value">R$ ${fmt(todayRevenue)}</div><div class="stat-label">Hoje</div></div><div class="stat-card"><div class="stat-value">${today.length}</div><div class="stat-label">Hoje pedidos</div></div><div class="stat-card"><div class="stat-value">R$ ${fmt(monthRevenue)}</div><div class="stat-label">Mês</div></div><div class="stat-card"><div class="stat-value">${delivered.length}</div><div class="stat-label">Entregues</div></div><div class="stat-card"><div class="stat-value">R$ ${fmt(ticket)}</div><div class="stat-label">Ticket</div></div><div class="stat-card"><div class="stat-value">${all.length}</div><div class="stat-label">Total</div></div></div><div class="bg-white shadow-sm rounded-2xl p-4 mb-3"><h3 class="font-bold text-sm mb-3">🔥 Top 5 produtos</h3>${topProds.length === 0 ? '<p class="text-xs text-gray-400 text-center py-3">Sem dados</p>' : topProds.map(([name, qty], idx) => `<div class="flex items-center justify-between py-2 border-b last:border-0" style="border-color:var(--border);"><div class="flex items-center gap-2"><span class="font-extrabold text-red-600">${idx + 1}º</span><span class="text-sm font-semibold">${name}</span></div><span class="text-xs font-bold text-gray-500">${qty} vendidos</span></div>`).join('')}</div><div class="bg-white shadow-sm rounded-2xl p-4"><h3 class="font-bold text-sm mb-3">💰 Faturamento</h3><div class="stat-card" style="background: linear-gradient(135deg, #dc2626, #b91c1c);"><div class="stat-value" style="color:white;">R$ ${fmt(totalRevenue)}</div><div class="stat-label" style="color:rgba(255,255,255,0.8);">Total entregue</div></div></div>`;
+  } catch(e) { container.innerHTML = `<p class="text-red-500 text-sm">Erro: ${e.message}</p>`; }
+}
+async function loadStoreOrders(storeId) {
+  if (!storeId) return;
+  try { const { data } = await sb.from('orders').select('*, order_items(name, quantity, price, emoji)').eq('store_id', storeId).order('created_at', { ascending: false }); storeOrders = data || []; if (state.selectedStoreId === storeId && state.lojistaView === 'pedidos') renderLojistaPedidosView(); } catch (err) { showToast('Erro', 'error'); }
+}
+function renderLojistaPedidosView() {
+  const container = document.getElementById('lojista-view-content');
+  if (!container) return;
+  if (storeOrders.length === 0) { container.innerHTML = '<div class="bg-white shadow-sm rounded-2xl p-8 text-center"><div class="text-5xl mb-3">📋</div><p class="text-gray-400">Nenhum pedido.</p></div>'; return; }
+  const statusMap = { 'pendente': 'Pendente', 'preparando': 'Preparando', 'saiu': 'Saiu', 'entregue': 'Entregue', 'cancelado': 'Cancelado' };
+  const methodMap = { 'com_codigo': '🔑', 'com_foto': '📸', 'na_porta': '🚪', 'sem_contato': '📦' };
+  let html = '<div class="space-y-3">';
+  storeOrders.forEach(o => {
+    const statusClass = `order-status-${o.status || 'pendente'}`;
+    const borderColor = o.status === 'entregue' ? '#22c55e' : o.status === 'cancelado' ? '#ef4444' : '#eab308';
+    const itemsList = (o.order_items || []).map(i => `${i.quantity}x ${i.name}`).join('<br>');
+    html += `<div class="bg-white shadow-sm rounded-2xl p-4" style="border-left: 4px solid ${borderColor};"><div class="flex justify-between items-start"><div><p class="font-bold text-sm">👤 ${o.customer_name || 'Cliente'}</p><p class="text-xs text-gray-400">Código: ${o.confirmation_code || 'N/A'}</p></div><span class="order-status-badge ${statusClass}">${statusMap[o.status] || o.status}</span></div><div class="mt-2 text-xs text-gray-600"><div class="ml-2 mt-1">${itemsList}</div><p class="mt-2"><strong>💰 R$ ${fmt(o.total)}</strong>${o.discount > 0 ? ` <span class="text-green-600">(-R$ ${fmt(o.discount)})</span>` : ''}</p><p class="mt-1"><strong>📍</strong> ${o.delivery_address || 'Não informado'}</p><p class="mt-1">${methodMap[o.delivery_method] || ''} ${o.observations ? '· 📝 ' + o.observations : ''}</p>${o.motoboy_name ? `<p class="mt-1">🏍️ ${o.motoboy_name}</p>` : ''}</div><div class="mt-3 flex flex-wrap gap-2">${o.status === 'pendente' ? `<button onclick="updateOrderStatus('${o.id}','preparando')" style="background:#3b82f6;color:white;" class="text-xs font-bold px-3 py-1.5 rounded-full">🔵 Preparar</button>` : ''}${o.status === 'preparando' ? `<button onclick="dispatchOrder('${o.id}')" style="background:#eab308;color:white;" class="text-xs font-bold px-3 py-1.5 rounded-full">🟡 Despachar</button>` : ''}${o.status === 'saiu' && !o.motoboy_id ? `<p class="text-[11px] text-gray-500 italic">⏳ Aguardando</p>` : ''}${o.status === 'saiu' && o.motoboy_id ? `<p class="text-[11px] text-blue-600 font-semibold">🏍️ ${o.motoboy_name}</p>` : ''}${o.status !== 'entregue' && o.status !== 'cancelado' && o.status !== 'saiu' ? `<button onclick="updateOrderStatus('${o.id}','cancelado')" style="background:#ef4444;color:white;" class="text-xs font-bold px-3 py-1.5 rounded-full">🔴 Cancelar</button>` : ''}</div></div>`;
+  });
+  container.innerHTML = html + '</div>';
+}
+async function dispatchOrder(orderId) { if (!confirm('Despachar?')) return; try { const { error } = await sb.from('orders').update({ status: 'saiu', motoboy_id: null, motoboy_name: null }).eq('id', orderId); if (error) throw error; showToast('✅ Despachado!', 'success'); if (state.selectedStoreId) await loadStoreOrders(state.selectedStoreId); } catch (err) { showToast('Erro', 'error'); } }
+async function updateOrderStatus(orderId, newStatus) { try { const { error } = await sb.from('orders').update({ status: newStatus }).eq('id', orderId); if (error) throw error; showToast(`✅ ${newStatus}`, 'success'); if (state.selectedStoreId) await loadStoreOrders(state.selectedStoreId); } catch (err) { showToast('Erro', 'error'); } }
+function goBackLojista() { state.selectedStoreId = null; state.lojistaView = 'produtos'; storeOrders = []; renderProfileTab(); }
+
+async function loadMyStores() {
+  const ownerId = state.currentUser?.id;
+  if (!ownerId) return;
+  try {
+    const { data } = await sb.from('stores').select('*').eq('owner_id', ownerId);
+    myStores = data || []; myStoreProducts = {}; myDrivers = {};
+    await Promise.all(myStores.map(async store => {
+      const [p, d] = await Promise.all([sb.from('products').select('*').eq('store_id', store.id), sb.from('motoboys').select('*').eq('store_id', store.id)]);
+      myStoreProducts[store.id] = p.data || []; myDrivers[store.id] = d.data || [];
+    }));
+    renderProfileTab();
+  } catch (err) { showToast('Erro', 'error'); }
+}
+async function saveStoreWithLocation() {
+  const name = document.getElementById('store-name')?.value.trim();
+  if (!name) { showToast('Nome obrigatório', 'error'); return; }
+  const lat = parseFloat(document.getElementById('store-lat')?.value);
+  const lng = parseFloat(document.getElementById('store-lng')?.value);
+  const cat = document.getElementById('store-cat')?.value;
+  const fee = parseFloat(document.getElementById('store-fee')?.value) || 0;
+  const isOpen = document.getElementById('store-is-open')?.checked ?? true;
+  try {
+    const { error } = await sb.from('stores').insert({ name, description: document.getElementById('store-desc')?.value.trim() || '', category: cat, emoji: CATEGORY_EMOJIS[cat] || '📦', delivery_fee: fee, delivery_radius: document.getElementById('store-radius')?.value.trim() || '', owner_id: state.currentUser.id, owner_email: state.currentUser.email, latitude: isNaN(lat) ? null : lat, longitude: isNaN(lng) ? null : lng, is_open: isOpen });
+    if (error) throw error;
+    showToast('Loja cadastrada!', 'success'); await loadHomeData(); await loadMyStores();
+  } catch (err) { showToast('Erro: ' + err.message, 'error'); }
+}
+async function saveProduct(storeId) {
+  const name = document.getElementById('prod-name-' + storeId)?.value.trim();
+  const price = parseFloat(document.getElementById('prod-price-' + storeId)?.value);
+  if (!name || isNaN(price) || price <= 0) { showToast('Preencha nome e preço', 'error'); return; }
+  const optName = document.getElementById('prod-opts-name-' + storeId)?.value.trim();
+  const optPrice = parseFloat(document.getElementById('prod-opts-price-' + storeId)?.value);
+  const options = (optName && !isNaN(optPrice) && optPrice > 0) ? [{ name: optName, price: optPrice }] : [];
+  try {
+    const { error } = await sb.from('products').insert({ store_id: storeId, name, description: document.getElementById('prod-desc-' + storeId)?.value.trim() || '', category: document.getElementById('prod-cat-' + storeId)?.value.trim() || 'Geral', price, emoji: document.getElementById('prod-emoji-' + storeId)?.value.trim() || '📦', stock: parseInt(document.getElementById('prod-stock-' + storeId)?.value) || 0, is_available: true, options });
+    if (error) throw error;
+    showToast('Produto cadastrado!', 'success'); await loadMyStores();
+  } catch (err) { showToast('Erro: ' + err.message, 'error'); }
+}
+async function deleteProduct(id) { if (!confirm('Excluir?')) return; try { await sb.from('products').delete().eq('id', id); showToast('Excluído', 'success'); await loadMyStores(); } catch(e) { showToast('Erro', 'error'); } }
+async function saveDriver(storeId) {
+  const name = document.getElementById('drv-name-' + storeId)?.value.trim();
+  const phone = document.getElementById('drv-phone-' + storeId)?.value.trim();
+  if (!name) { showToast('Nome obrigatório', 'error'); return; }
+  if (!phone || phone.replace(/\D/g,'').length < 10) { showToast('Telefone inválido', 'error'); return; }
+  try { const { error } = await sb.from('motoboys').insert({ store_id: storeId, full_name: name, phone, cpf: document.getElementById('drv-cpf-' + storeId)?.value.trim() || '', modelo_moto: document.getElementById('drv-model-' + storeId)?.value.trim() || '', placa: document.getElementById('drv-placa-' + storeId)?.value.trim() || '', status: 'aprovado', is_available: true, created_by: state.currentUser.id }); if (error) throw error; showToast('✅ Cadastrado!', 'success'); await loadMyStores(); } catch (err) { showToast('Erro: ' + err.message, 'error'); }
+}
+async function deleteDriver(id) { if (!confirm('Excluir?')) return; try { await sb.from('motoboys').delete().eq('id', id); showToast('Excluído', 'success'); await loadMyStores(); } catch(e) { showToast('Erro', 'error'); } }
+function getCurrentPositionForCadastro(setLatLng) { if (!navigator.geolocation) return; navigator.geolocation.getCurrentPosition(pos => { setLatLng(pos.coords.latitude, pos.coords.longitude); showToast('📍 OK', 'success'); }, () => showToast('Erro', 'error'), { enableHighAccuracy: true, timeout: 15000 }); }
+
+function renderSobreContent() {
+  const container = document.getElementById('sobre-content');
+  if (!container) return;
+  const devs = ['Ana Cristina da Silva Rocha','Ana Karen Camilo Nogueira','Ana Kesya da Silva Alencar','Franciele Alves dos Santos','Maria Nicoly Rodrigues dos Santos','Huagner Marques de Negreiros','Saulo Davi Campelo Viana','Chloe Rodrigues de Sousa'];
+  container.innerHTML = `<div class="bg-white shadow-sm rounded-2xl p-4 text-center"><div class="text-4xl mb-2">💡</div><h3 class="font-extrabold text-lg">Sobre o Delivery app</h3></div><div class="bg-white shadow-sm rounded-2xl p-4"><p class="font-bold text-sm text-center mb-3">👨‍💻 Equipe</p>${devs.map(n => `<p class="text-sm text-gray-700 text-center">${n}</p>`).join('')}</div>`;
+}
+
+// ============ ADMIN ============
+function setAdminView(v) { state.adminView = v; renderAdminContent(); }
+async function renderAdminContent() {
+  const container = document.getElementById('admin-content');
+  if (!container) return;
+  container.innerHTML = `<div class="flex gap-2 mb-3"><button onclick="setAdminView('lojas')" class="admin-tab-btn ${state.adminView === 'lojas' ? 'admin-tab-active' : 'admin-tab-inactive'}">🏪 Lojas</button><button onclick="setAdminView('musicas')" class="admin-tab-btn ${state.adminView === 'musicas' ? 'admin-tab-active' : 'admin-tab-inactive'}">🎵 Músicas</button></div><div id="admin-view-content"></div>`;
+  if (state.adminView === 'lojas') await renderAdminLojas();
+  else await renderAdminMusicas();
+}
+async function renderAdminLojas() {
+  const container = document.getElementById('admin-view-content');
+  if (!container) return;
+  try {
+    const { data: allStores } = await sb.from('stores').select('*, owner_email').order('name');
+    let html = `<div class="bg-white shadow-sm rounded-2xl p-4"><p class="font-bold text-sm mb-3">🏪 Lojas (${allStores?.length || 0})</p>`;
+    (allStores || []).forEach(s => {
+      html += `<div class="py-4 border-b last:border-0" style="border-color:var(--border);"><div class="flex items-center gap-3 mb-2"><div class="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center text-xl">${s.emoji || '🏪'}</div><div class="flex-1 min-w-0"><p class="font-semibold text-sm truncate">${s.name}</p><p class="text-xs text-gray-400 truncate">${s.owner_email || ''}</p></div></div>${s.banner_url ? `<img src="${s.banner_url}" style="width:100%;height:96px;object-fit:cover;border-radius:12px;" />` : `<div style="width:100%;height:96px;background:#f3f4f6;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:32px;">${s.emoji || '🏪'}</div>`}<div class="flex gap-2 mt-2 flex-wrap"><label class="flex-1 min-w-[120px] cursor-pointer bg-red-600 text-white text-xs font-bold px-3 py-2 rounded-full text-center">📸 ${s.banner_url ? 'Trocar' : 'Enviar'}<input type="file" accept="image/*" class="hidden" onchange="uploadStoreBanner('${s.id}', this)" /></label>${s.banner_url ? `<button onclick="removeStoreBanner('${s.id}')" class="bg-gray-200 text-gray-700 text-xs font-bold px-3 py-2 rounded-full">🗑️</button>` : ''}<button onclick="deleteStore('${s.id}')" class="bg-red-100 text-red-600 text-xs font-bold px-3 py-2 rounded-full">🗑️ Excluir</button></div></div>`;
+    });
+    container.innerHTML = html + '</div>';
+  } catch (err) { container.innerHTML = '<p class="text-red-500 text-sm">Erro</p>'; }
+}
+async function renderAdminMusicas() {
+  const container = document.getElementById('admin-view-content');
+  if (!container) return;
+  try {
+    const { data: musicas } = await sb.from('app_music').select('*').order('created_at', { ascending: false });
+    let html = `<div class="bg-white shadow-sm rounded-2xl p-4"><div class="flex items-center justify-between mb-3"><p class="font-bold text-sm">🎵 Playlist (${musicas?.length || 0})</p></div><button onclick="openAddMusicModal()" class="w-full text-white text-sm font-bold px-4 py-3 rounded-full" style="background:linear-gradient(135deg,#9333ea,#6d28d9); cursor:pointer;">➕ Adicionar música</button>`;
+    (musicas || []).forEach(m => {
+      const isPlaying = currentMusicId === m.id;
+      html += `<div class="py-3 border-b last:border-0 flex items-center gap-3" style="border-color:var(--border);"><div class="w-10 h-10 rounded-full flex items-center justify-center" style="background:${isPlaying ? 'linear-gradient(135deg,#9333ea,#6d28d9)' : '#f3e8ff'};color:${isPlaying ? 'white' : '#9333ea'};">🎵</div><div class="flex-1 min-w-0"><p class="font-semibold text-sm truncate">${m.title}</p><p class="text-xs text-gray-400 truncate">${m.artist || '—'}</p></div><button onclick="previewMusic('${m.id}')" class="bg-purple-100 text-purple-600 text-xs font-bold px-3 py-2 rounded-full">${isPlaying ? '⏸' : '▶'}</button><button onclick="deleteMusic('${m.id}')" class="bg-red-100 text-red-600 text-xs font-bold px-3 py-2 rounded-full">🗑️</button></div>`;
+    });
+    container.innerHTML = html + '</div>';
+  } catch(e) { container.innerHTML = `<p class="text-red-500 text-sm">Erro</p>`; }
+}
+function openAddMusicModal() { musicFileSelected = null; document.getElementById('music-file-name').textContent = 'Toque para escolher um MP3'; document.getElementById('music-title-input').value = ''; document.getElementById('music-artist-input').value = ''; document.getElementById('music-preview').style.display = 'none'; document.getElementById('music-upload-error').style.display = 'none'; document.getElementById('music-file-input').value = ''; document.getElementById('add-music-modal').style.display = 'flex'; }
+function closeAddMusicModal() { document.getElementById('add-music-modal').style.display = 'none'; musicFileSelected = null; }
+function onMusicFileSelected(input) { const file = input.files?.[0]; if (!file) return; if (!file.type.startsWith('audio/')) { showMusicError('Envie um áudio'); return; } if (file.size > 15 * 1024 * 1024) { showMusicError('Máx 15MB'); return; } musicFileSelected = file; document.getElementById('music-file-name').textContent = file.name; if (!document.getElementById('music-title-input').value) document.getElementById('music-title-input').value = file.name.replace(/\.[^/.]+$/, '').replace(/_/g, ' '); document.getElementById('music-preview').style.display = 'block'; document.getElementById('music-preview-audio').src = URL.createObjectURL(file); }
+function showMusicError(msg) { const err = document.getElementById('music-upload-error'); err.textContent = '❌ ' + msg; err.style.display = 'block'; setTimeout(() => err.style.display = 'none', 5000); }
+async function confirmUploadMusic() {
+  if (!musicFileSelected) { showMusicError('Selecione um arquivo'); return; }
+  const title = document.getElementById('music-title-input').value.trim();
+  if (!title) { showMusicError('Digite o título'); return; }
+  const artist = document.getElementById('music-artist-input').value.trim();
+  const btn = document.getElementById('music-upload-btn'); btn.disabled = true; btn.textContent = 'Enviando...';
+  try {
+    const ext = musicFileSelected.name.split('.').pop().toLowerCase() || 'mp3';
+    const filePath = `music_${Date.now()}.${ext}`;
+    const { error: upErr } = await sb.storage.from('app-music').upload(filePath, musicFileSelected, { contentType: musicFileSelected.type });
+    if (upErr) throw upErr;
+    const { data: pub } = sb.storage.from('app-music').getPublicUrl(filePath);
+    const { error: dbErr } = await sb.from('app_music').insert({ title, artist, url: pub.publicUrl, uploaded_by: state.currentUser.id });
+    if (dbErr) throw dbErr;
+    showToast('🎵 Adicionada!', 'success'); closeAddMusicModal(); await renderAdminMusicas();
+  } catch (err) { showMusicError(err.message); btn.disabled = false; btn.textContent = 'Enviar'; }
+}
+async function deleteMusic(id) { if (!confirm('Excluir?')) return; try { await sb.from('app_music').delete().eq('id', id); if (currentMusicId === id) stopMusic(); showToast('Excluída', 'success'); renderAdminMusicas(); } catch(e) { showToast('Erro', 'error'); } }
+async function previewMusic(id) { try { const { data } = await sb.from('app_music').select('*').eq('id', id).maybeSingle(); if (!data) return; const a = document.getElementById('bg-audio'); if (currentMusicId === id && !a.paused) { a.pause(); updateMusicUI(); if (state.profileTab === 'admin') renderAdminMusicas(); return; } if (!allMusic.length) { const { data: l } = await sb.from('app_music').select('*').order('created_at', { ascending: false }); allMusic = l || []; } currentMusicId = id; currentMusicIndex = allMusic.findIndex(m => m.id === id); a.src = data.url; a.volume = 0.6; await a.play(); updateMusicUI(); document.getElementById('mini-title').textContent = data.title; document.getElementById('mini-artist').textContent = data.artist || '—'; document.getElementById('mini-player').style.display = 'flex'; if (state.profileTab === 'admin') renderAdminMusicas(); } catch(e) { showToast('Erro', 'error'); } }
+async function uploadStoreBanner(storeId, input) { const file = input.files?.[0]; if (!file) return; showToast('📤 Enviando...', 'default'); try { const ext = file.name.split('.').pop(); const path = `store_${storeId}_${Date.now()}.${ext}`; const { error } = await sb.storage.from('store-banners').upload(path, file); if (error) throw error; const { data: pub } = sb.storage.from('store-banners').getPublicUrl(path); await sb.from('stores').update({ banner_url: pub.publicUrl }).eq('id', storeId); showToast('✅ Banner!', 'success'); await renderAdminContent(); await loadHomeData(); } catch (e) { showToast('Erro: ' + e.message, 'error'); } }
+async function removeStoreBanner(storeId) { if (!confirm('Remover?')) return; try { await sb.from('stores').update({ banner_url: null }).eq('id', storeId); showToast('Removido', 'success'); await renderAdminContent(); await loadHomeData(); } catch (e) { showToast('Erro', 'error'); } }
+async function deleteStore(id) {
+  if (!confirm('Excluir loja?')) return;
+  try {
+    await sb.from('products').delete().eq('store_id', id);
+    await sb.from('stores').delete().eq('id', id);
+    if (state.cart.storeId === id) { clearCart(); showToast('Carrinho limpo (loja excluída)', 'default'); }
+    showToast('Excluída', 'success');
+    await loadHomeData();
+    renderAdminContent();
+  } catch(e) { showToast('Erro', 'error'); }
+}
+
+// ============ CHAT IA ============
+function openAIChat() { document.getElementById('chat-list-view').style.display = 'none'; document.getElementById('music-view').style.display = 'none'; document.getElementById('chat-ai-view').style.display = 'flex'; }
+function closeAIChat() { document.getElementById('chat-ai-view').style.display = 'none'; document.getElementById('chat-list-view').style.display = 'block'; }
+function appendChatMsg(role, content) { const area = document.getElementById('chat-messages-area'); const div = document.createElement('div'); div.className = `msg ${role === 'user' ? 'msg-user' : 'msg-bot'}`; if (role === 'bot') div.innerHTML = `<span style="font-weight:600;color:#dc2626;">🤖:</span> ${content}`; else div.textContent = content; area.appendChild(div); area.scrollTop = area.scrollHeight; }
+function appendTyping() { const a = document.getElementById('chat-messages-area'); const d = document.createElement('div'); d.className = 'typing-indicator'; d.innerHTML = '<span></span><span></span><span></span>'; a.appendChild(d); a.scrollTop = a.scrollHeight; }
+function removeTyping() { const el = document.querySelector('.typing-indicator'); if (el) el.remove(); }
+async function sendChatMsg(text) {
+  if (!text.trim()) return;
+  appendChatMsg('user', text); appendTyping();
+  await new Promise(r => setTimeout(r, 900));
+  removeTyping();
+  const msg = text.toLowerCase();
+  const respostas = [
+    { keys: ['oi', 'olá', 'bom dia'], reply: 'Olá! Como posso ajudar?' },
+    { keys: ['rastrear', 'onde está', 'cadê'], reply: '📦 Vá em **Perfil → Meus Pedidos**.' },
+    { keys: ['cancelar'], reply: '❌ Contate a loja pelo chat.' },
+    { keys: ['código'], reply: '🔑 Aparece em **Meus Pedidos**.' },
+    { keys: ['criar loja', 'lojista'], reply: '🏪 **Perfil → Lojista**.' },
+    { keys: ['pagamento'], reply: '💳 Dinheiro, PIX ou cartão.' },
+    { keys: ['entrega segura'], reply: '🛡️ Com código, foto, porta ou sem contato.' },
+    { keys: ['entregador', 'motoboy'], reply: '🏍️ Peça à loja para te cadastrar.' },
+    { keys: ['cupom', 'desconto'], reply: '🏷️ Aplique no checkout!' },
+    { keys: ['avaliação', 'avaliar'], reply: '⭐ Após receber, avalie em **Meus Pedidos**.' }
+  ];
+  let resp = null;
+  for (const r of respostas) if (r.keys.some(k => msg.includes(k))) { resp = r.reply; break; }
+  if (!resp) resp = '🤔 Use os botões abaixo ou contate: huagnermarques@gmail.com';
+  appendChatMsg('bot', resp);
+}
+function sendChatFromInput() { const inp = document.getElementById('chat-input'); const t = inp.value.trim(); if (!t) return; inp.value = ''; sendChatMsg(t); }
+
+// ============ INIT ============
+function setGreeting() { const h = new Date().getHours(); const el = document.getElementById('greeting-text'); if (el) el.textContent = h < 12 ? 'Bom dia! 👋' : h < 18 ? 'Boa tarde! 👋' : 'Boa noite! 👋'; }
+async function loadHomeData() {
+  try { const { data } = await sb.from('stores').select('*'); state.allStores = data || []; renderFeaturedBanner(); renderStoreGrid(); renderFavoritesSection(); } catch (err) { showToast('Erro', 'error'); }
+}
+async function initAppAfterLogin(isEntregador = false) {
+  setGreeting(); renderCategoryFilter(); renderCartBars();
+  await loadHomeData();
+  await loadFavorites();
+  await renderStoreGrid();
+  renderFavoritesSection();
+  if (!isEntregador && state.currentUser && !state.entregadorAtual) {
+    await loadNotifications();
+    if (state.notifInterval) clearInterval(state.notifInterval);
+    state.notifInterval = setInterval(loadNotifications, 20000);
+    setTimeout(() => { if (!state.locationPermissionAsked) showLocationModal(); if (!state.notificationPermissionAsked) showNotificationModal(); }, 2000);
+  }
+  if (isEntregador) {
+    state.currentPage = 'perfil';
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('page-perfil').classList.add('active');
+    ['home', 'mapa', 'chat', 'perfil'].forEach(p => { const btn = document.getElementById('nav-' + p); if (btn) btn.className = `nav-item ${p === 'perfil' ? 'text-red-600' : 'text-gray-400'}`; });
+    document.getElementById('profile-view').style.display = 'block';
+    renderProfileHeader(); setProfileTab('entregador');
+  } else {
+    showProfileView();
+  }
+}
+function showProfileView() { document.getElementById('profile-view').style.display = 'block'; renderProfileHeader(); renderProfileTab(); }
+
+Object.assign(window, {
+  navigate, goBack, handleLogout, toggleNotifPanel, markAllRead, markNotifRead,
+  denyLocation, allowLocation, denyNotification, allowNotification,
+  resetPassword, openAIChat, closeAIChat, sendChatMsg, sendChatFromInput,
+  openMusicChat, closeMusicChat, playMusic, stopMusic, togglePlayPause, prevMusic, nextMusic, toggleShuffle, toggleRepeat,
+  setCategory, setProfileTab, setLojistaView, updateOrderStatus, dispatchOrder,
+  selectLojistaStore, saveStoreWithLocation, saveProduct, deleteProduct, goBackLojista,
+  getCurrentPositionForCadastro, deleteStore, addProd, removeProd, updateCartItem, cleanupProd,
+  confirmOrder, renderCheckout, renderStoreGrid, renderMapList, loadMyStores,
+  saveDriver, deleteDriver, openEntregadorLogin, closeEntregadorLogin, loginAsEntregador,
+  openConfirmCodeModal, closeDeliveryCodeModal, validateDeliveryCode,
+  loadEntregadorDeliveries, setEntregadorView, acceptDelivery,
+  uploadStoreBanner, removeStoreBanner, deleteMusic, previewMusic, setAdminView, openAddMusicModal, closeAddMusicModal, onMusicFileSelected, showMusicError, confirmUploadMusic,
+  openReviewModal, closeReviewModal, submitReview, startTracking,
+  toggleFavorite, applyCoupon, removeCoupon,
+  openCouponModal, closeCouponModal, saveCoupon, deleteCoupon,
+  toggleDarkMode,
+  toggleOption, confirmOptions, closeOptionsModal,
+  loadChatsList, openConversation, closeConversation, sendConvMessage,
+  renderAdminLojas, renderAdminMusicas,
+  togglePassword
+});
+
+document.addEventListener('DOMContentLoaded', async () => {
+  loadDarkMode();
+  loadCart(); renderCartBars();
+  const codeInput = document.getElementById('delivery-code-input');
+  if (codeInput) {
+    codeInput.addEventListener('input', e => { e.target.value = e.target.value.replace(/\D/g,'').slice(0,4); });
+    codeInput.addEventListener('keypress', e => { if (e.key === 'Enter') { e.preventDefault(); validateDeliveryCode(); } });
+  }
+  const phoneInput = document.getElementById('entregador-phone-input');
+  if (phoneInput) phoneInput.addEventListener('keypress', e => { if (e.key === 'Enter') { e.preventDefault(); loginAsEntregador(); } });
+
+  const savedEnt = loadEntregadorSession();
+  if (savedEnt) {
+    state.entregadorAtual = savedEnt;
+    state.currentUser = { id: savedEnt.id, email: (savedEnt.phone||'') + '@entregador.local', full_name: savedEnt.full_name, is_entregador: true };
+    document.getElementById('auth-container').style.display = 'none';
+    document.getElementById('app-main').style.display = 'block';
+    document.getElementById('profile-avatar').textContent = '🏍️';
+    document.getElementById('tab-btn-entregador').style.display = 'flex';
+    state.profileTab = 'entregador';
+    await initAppAfterLogin(true);
+    return;
+  }
+  const savedUser = loadSession();
+  if (savedUser) {
+    const { data: { session } } = await sb.auth.getSession();
+    if (session?.user) {
+      state.currentUser = { id: session.user.id, email: session.user.email, full_name: session.user.user_metadata?.full_name || '' };
+      saveSession(state.currentUser);
+      showApp();
+      return;
+    } else clearSession();
+  }
+  document.getElementById('auth-container').style.display = 'flex';
+  document.getElementById('app-main').style.display = 'none';
+});
+document.addEventListener('click', e => {
+  const wrap = document.getElementById('notif-bell-wrap');
+  const panel = document.getElementById('notif-panel-global');
+  if (wrap && panel && !wrap.contains(e.target) && !panel.contains(e.target) && panel.style.display === 'block') panel.style.display = 'none';
+});
+</script>
+</body>
+</html>
